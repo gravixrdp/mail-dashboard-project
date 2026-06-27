@@ -59,16 +59,38 @@ app.use("/api/trpc/*", trpcServer({
 // Serve static files first, then fallback to index.html for SPA
 app.get("*", async (c, next) => {
   try {
+    // First, check if it's a request for /api/trpc - if yes, let next() handle it
+    if (c.req.path.startsWith("/api/trpc")) {
+      return next();
+    }
+
     console.log("Handling request for path:", c.req.path);
-    const staticRes = await serveStatic({ root: "./dist/public" })(c, next);
-    console.log("Static response status:", staticRes?.status);
+
+    // Try to serve static file
+    let staticRes: Response | null = null;
+    try {
+      staticRes = await serveStatic({ 
+        root: "./dist/public",
+        manifest: false, // Disable manifest to avoid __STATIC_CONTENT_MANIFEST error
+      })(c, next);
+    } catch (e) {
+      console.log("serveStatic failed for regular request:", e);
+    }
+
     if (staticRes && staticRes.status !== 404) {
       console.log("Serving static file");
       return staticRes;
     }
-    // Fallback to index.html for SPA routes
+
+    // Fallback to index.html for all SPA routes
     console.log("Falling back to index.html");
-    return serveStatic({ path: "index.html", root: "./dist/public" })(c);
+    // Read index.html from assets and return it manually
+    const indexRes = await serveStatic({ 
+      path: "index.html", 
+      root: "./dist/public",
+      manifest: false,
+    })(c);
+    return indexRes;
   } catch (err) {
     console.error("Error serving static files:", err);
     return c.text("Internal Server Error: " + (err as Error).message, 500);
