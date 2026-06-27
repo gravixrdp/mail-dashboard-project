@@ -200,16 +200,31 @@ export default function Settings() {
                   placeholder="you@example.com"
                 />
               </FormField>
-              <FormField label="Resend API Key" hint="Get free key at resend.com/api-keys">
+              <FormField label="Password / App Password" hint="Use Gmail App Password (not your login password)">
                 <Input
                   {...form.register("smtpPass")}
-                  placeholder="re_xxxxxxxxxxxxxxxx"
+                  placeholder="Your app password"
                   type="password"
                 />
               </FormField>
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="SMTP Host" hint="e.g., smtp.gmail.com">
+                <Input
+                  {...form.register("smtpHost")}
+                  placeholder="smtp.gmail.com"
+                />
+              </FormField>
+              <FormField label="Port" hint="e.g., 587">
+                <Input
+                  type="number"
+                  {...form.register("smtpPort", { valueAsNumber: true })}
+                  placeholder="587"
+                />
+              </FormField>
+            </div>
             <p className="text-xs text-muted-foreground">
-              Get your free API key at <a href="https://resend.com/api-keys" target="_blank" className="underline">resend.com/api-keys</a> (100 emails/day free)
+              For Gmail: Enable 2FA, then create App Password at <a href="https://myaccount.google.com/apppasswords" target="_blank" className="underline">myaccount.google.com/apppasswords</a>
             </p>
           </div>
         </Section>
