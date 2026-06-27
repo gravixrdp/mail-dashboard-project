@@ -59,7 +59,9 @@ app.use("/api/trpc/*", trpcServer({
 // Serve static files first, then fallback to index.html for SPA
 app.get("*", async (c, next) => {
   const staticRes = await serveStatic({ root: "./dist/public" })(c, next);
-  if (staticRes) return staticRes;
+  if (staticRes && staticRes.status !== 404) {
+    return staticRes;
+  }
   // Fallback to index.html for SPA routes
   return serveStatic({ path: "index.html", root: "./dist/public" })(c);
 });
