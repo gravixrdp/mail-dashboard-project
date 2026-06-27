@@ -88,23 +88,30 @@ export default function ComposeMail() {
   const wrapTextWithTags = (startTag: string, endTag: string) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
-    
+
     const { selectionStart, selectionEnd, value } = textarea;
     const selectedText = value.substring(selectionStart, selectionEnd);
-    const newText = value.substring(0, selectionStart) + 
-                   startTag + selectedText + endTag + 
+    const newText = value.substring(0, selectionStart) +
+                   startTag + selectedText + endTag +
                    value.substring(selectionEnd);
-    
+
     form.setValue("body", newText);
-    
+
+    // Force the textarea DOM to update by using the native setter
+    const nativeSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLTextAreaElement.prototype, "value"
+    )?.set;
+    if (nativeSetter) {
+      nativeSetter.call(textarea, newText);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
     // Set cursor position after the end tag
     setTimeout(() => {
       textarea.focus();
       if (selectedText.length === 0) {
-        // No text selected, place cursor between tags
         textarea.setSelectionRange(selectionStart + startTag.length, selectionStart + startTag.length);
       } else {
-        // Text selected, place cursor after end tag
         textarea.setSelectionRange(selectionEnd + startTag.length + endTag.length, selectionEnd + startTag.length + endTag.length);
       }
     }, 0);
