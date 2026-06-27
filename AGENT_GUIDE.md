@@ -78,3 +78,10 @@ This ensures that every push to the `main` branch automatically updates the depl
 - **Environment**: Ensure all necessary environment variables are configured in the Cloudflare Pages project settings and GitHub Actions secrets.
 
 This guide will be updated with any significant changes to the application's architecture or functionality.
+
+## 7. How to Add GitHub Secrets
+1. Go to https://github.com/gravixrdp/mail-dashboard-project/settings/secrets/actions
+2. Click "New repository secret"
+3. Add the following secrets:
+   - `CLOUDFLARE_API_TOKEN`: Your Cloudflare API token (from https://dash.cloudflare.com/profile/api-tokens)
+   - `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare account ID (found in your Cloudflare dashboard URL)
