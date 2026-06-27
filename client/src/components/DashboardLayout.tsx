@@ -114,8 +114,8 @@ function SidebarInner({ children }: { children: React.ReactNode }) {
                     tooltip={item.label}
                     className={`h-9 rounded-md transition-all font-normal ${
                       isActive
-                        ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-                        : "hover:bg-accent text-muted-foreground hover:text-foreground"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground"
                     }`}
                   >
                     <item.icon className="h-4 w-4 shrink-0" />
@@ -130,7 +130,7 @@ function SidebarInner({ children }: { children: React.ReactNode }) {
         <SidebarFooter className="p-2 border-t border-border/60">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2.5 rounded-md px-2 py-2 hover:bg-accent transition-colors w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <button className="flex items-center gap-2.5 rounded-md px-2 py-2 transition-colors w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <Avatar className="h-7 w-7 border shrink-0">
                   <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
                     {user?.name?.charAt(0)?.toUpperCase() ?? "U"}
