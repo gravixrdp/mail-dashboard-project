@@ -8,4 +8,12 @@ export type TrpcContext = {
   db: DrizzleD1Database;
 };
 
-// We don't need createContext here anymore, we define it in worker.ts
+export function createContext(): TrpcContext {
+  // This is a placeholder for local development
+  return {
+    req: null,
+    res: null,
+    user: null,
+    db: null as any,
+  };
+}

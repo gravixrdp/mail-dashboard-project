@@ -4,6 +4,7 @@ import { trpcServer } from "@hono/trpc-server";
 import { appRouter } from "../routers";
 import { serveStatic } from "hono/cloudflare-workers";
 import { drizzle } from "drizzle-orm/d1";
+import * as db from "../db";
 
 type Env = {
   DB: D1Database;
@@ -19,50 +20,48 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.use("*", cors());
 
-// Create context for tRPC
-const createContext = (c: any) => {
-  // MOCK USER FOR TESTING!
-  const mockUser = {
-    id: 1,
-    openId: "test-open-id",
-    name: "Test User",
-    email: "test@example.com",
-    loginMethod: "test",
-    role: "admin",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    lastSignedIn: new Date().toISOString(),
-  };
-  const db = drizzle(c.env.DB);
+// Create context for tRPC (directly from Hono c)
+const createContext = async (c: any) => {
+  const database = drizzle(c.env.DB);
+  
+  // First, try to get or create a default user
+  let user = await db.getUserByOpenId(database, "default-user-id");
+  if (!user) {
+    user = await db.upsertUser(database, {
+      openId: "default-user-id",
+      name: "User",
+      email: "user@example.com",
+      loginMethod: "default",
+      lastSignedIn: new Date(),
+    });
+  }
+  
   return {
     req: c.req,
     res: c.res,
-    user: mockUser,
-    db: db,
+    user: user,
+    db: database,
     env: c.env,
   };
 };
 
-// tRPC API endpoint
+// tRPC API endpoint (with proper type safety)
 app.use("/api/trpc/*", trpcServer({
   router: appRouter,
-  createContext: (opts) => {
-    return createContext(opts.c);
+  createContext: async (opts, c) => {
+    return await createContext(c);
   },
   onError: ({ path, error }) => {
     console.error("tRPC error on path:", path, error);
   },
 }));
 
-// Serve static files
-app.get("*", serveStatic({ root: "./dist/public" }));
-
-// Fallback to index.html for SPA (single-page app) routing
-app.get("*", async (c) => {
-  return serveStatic({
-    path: "index.html",
-    root: "./dist/public",
-  })(c);
+// Serve static files first, then fallback to index.html for SPA
+app.get("*", async (c, next) => {
+  const staticRes = await serveStatic({ root: "./dist/public" })(c, next);
+  if (staticRes) return staticRes;
+  // Fallback to index.html for SPA routes
+  return serveStatic({ path: "index.html", root: "./dist/public" })(c);
 });
 
 export default app;

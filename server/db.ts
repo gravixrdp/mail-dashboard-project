@@ -125,6 +125,33 @@ export async function updateUserSettings(db: DrizzleD1Database, userId: number, 
   return db.update(userSettings).set(data).where(eq(userSettings.userId, userId));
 }
 
+// Users queries
+export async function getUserByOpenId(db: DrizzleD1Database, openId: string) {
+  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function upsertUser(db: DrizzleD1Database, data: { openId: string; name?: string | null; email?: string | null; loginMethod?: string | null; lastSignedIn?: Date }) {
+  const existingUser = await getUserByOpenId(db, data.openId);
+  if (existingUser) {
+    await db.update(users).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(users.openId, data.openId));
+    const updatedUser = await getUserByOpenId(db, data.openId);
+    return updatedUser;
+  } else {
+    await db.insert(users).values({
+      ...data,
+      name: data.name ?? null,
+      email: data.email ?? null,
+      loginMethod: data.loginMethod ?? null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastSignedIn: data.lastSignedIn ? data.lastSignedIn.toISOString() : new Date().toISOString(),
+    });
+    const newUser = await getUserByOpenId(db, data.openId);
+    return newUser;
+  }
+}
+
 // Dashboard stats queries
 export async function getDashboardStats(db: DrizzleD1Database, userId: number) {
   const now = new Date();
