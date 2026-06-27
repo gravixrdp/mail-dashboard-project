@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import {
-  Send, Save, Eye, AlertTriangle, X, Plus, FileText, Building2, ChevronDown,
+  Send, Save, Eye, AlertTriangle, X, Plus, FileText, Building2, ChevronDown, Bold, Italic, Underline,
 } from "lucide-react";
 
 const VARIABLES = ["{{company}}", "{{today}}", "{{position}}", "{{portfolio}}", "{{github}}", "{{linkedin}}", "{{phone}}", "{{email}}", "{{resume}}"];
@@ -64,6 +64,7 @@ export default function ComposeMail() {
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [duplicateInfo, setDuplicateInfo] = useState<any>(null);
   const [isSending, setIsSending] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: templates } = trpc.templates.list.useQuery();
   const { data: resumes } = trpc.resumes.list.useQuery();
@@ -82,6 +83,56 @@ export default function ComposeMail() {
     resolver: zodResolver(composeSchema),
     defaultValues: { to: "", subject: settings?.defaultSubject ?? "", body: "" },
   });
+
+  // Function to wrap selected text with tags
+  const wrapTextWithTags = (startTag: string, endTag: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    
+    const { selectionStart, selectionEnd, value } = textarea;
+    const selectedText = value.substring(selectionStart, selectionEnd);
+    const newText = value.substring(0, selectionStart) + 
+                   startTag + selectedText + endTag + 
+                   value.substring(selectionEnd);
+    
+    form.setValue("body", newText);
+    
+    // Set cursor position after the end tag
+    setTimeout(() => {
+      textarea.focus();
+      if (selectedText.length === 0) {
+        // No text selected, place cursor between tags
+        textarea.setSelectionRange(selectionStart + startTag.length, selectionStart + startTag.length);
+      } else {
+        // Text selected, place cursor after end tag
+        textarea.setSelectionRange(selectionEnd + startTag.length + endTag.length, selectionEnd + startTag.length + endTag.length);
+      }
+    }, 0);
+  };
+
+  // Formatting functions
+  const handleBold = () => wrapTextWithTags("<b>", "</b>");
+  const handleItalic = () => wrapTextWithTags("<i>", "</i>");
+  const handleUnderline = () => wrapTextWithTags("<u>", "</u>");
+
+  // Keyboard shortcut handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        handleBold();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+        e.preventDefault();
+        handleItalic();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+        e.preventDefault();
+        handleUnderline();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const toValue = form.watch("to");
   const bodyValue = form.watch("body");
@@ -216,6 +267,43 @@ export default function ComposeMail() {
 
                 <Separator />
 
+                {/* Formatting Toolbar */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Format</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8" 
+                      onClick={handleBold}
+                      title="Bold (Ctrl+B)"
+                    >
+                      <Bold className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8" 
+                      onClick={handleItalic}
+                      title="Italic (Ctrl+I)"
+                    >
+                      <Italic className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8" 
+                      onClick={handleUnderline}
+                      title="Underline (Ctrl+U)"
+                    >
+                      <Underline className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
                 {/* Variables */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Insert Variable</Label>
@@ -237,6 +325,7 @@ export default function ComposeMail() {
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Body</Label>
                   <Textarea
+                    ref={textareaRef}
                     {...form.register("body")}
                     placeholder="Dear Hiring Manager,&#10;&#10;I am writing to express my interest in..."
                     rows={16}
@@ -375,7 +464,10 @@ export default function ComposeMail() {
               </div>
             </div>
             <div className="p-4 rounded-lg bg-muted/50">
-              <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">{renderedBody}</pre>
+              <div 
+                className="text-sm whitespace-pre-wrap font-sans leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: renderedBody }}
+              />
             </div>
           </div>
           <DialogFooter>
