@@ -97,12 +97,12 @@ export default function Templates() {
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Email Templates</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{filtered.length} template{filtered.length !== 1 ? "s" : ""}</p>
         </div>
-        <Button onClick={openCreate} className="gap-2">
+        <Button onClick={openCreate} className="gap-2 w-full sm:w-auto">
           <Plus className="h-4 w-4" />New Template
         </Button>
       </div>
@@ -145,7 +145,7 @@ export default function Templates() {
                       <Badge variant="secondary" className="text-xs mt-1">{t.category}</Badge>
                     )}
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2">
+                  <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0 ml-2">
                     <Button variant="ghost" size="icon" className="h-7 w-7" title="Preview" onClick={() => setPreviewTemplate(t)}>
                       <Eye className="h-3.5 w-3.5" />
                     </Button>
@@ -173,7 +173,7 @@ export default function Templates() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={showCreate || !!editTemplate} onOpenChange={(o) => { if (!o) { setShowCreate(false); setEditTemplate(null); } }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editTemplate ? "Edit Template" : "New Template"}</DialogTitle>
           </DialogHeader>

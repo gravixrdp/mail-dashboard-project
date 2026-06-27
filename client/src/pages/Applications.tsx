@@ -123,14 +123,14 @@ export default function Applications() {
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Applications</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {filtered.length} application{filtered.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Button onClick={openCreate} className="gap-2">
+        <Button onClick={openCreate} className="gap-2 w-full sm:w-auto">
           <Plus className="h-4 w-4" />Add Application
         </Button>
       </div>
@@ -177,38 +177,73 @@ export default function Applications() {
               <p className="text-xs text-muted-foreground mt-1">Try adjusting your filters or add a new application</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[200px]">HR Email</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead className="w-[120px]">Status</TableHead>
-                  <TableHead className="w-[120px]">Sent</TableHead>
-                  <TableHead className="w-[80px] text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="w-[200px]">HR Email</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead className="w-[120px]">Status</TableHead>
+                      <TableHead className="w-[120px]">Sent</TableHead>
+                      <TableHead className="w-[80px] text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginated.map((app: any) => (
+                      <TableRow key={app.id} className="group">
+                        <TableCell className="font-medium text-sm">
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="truncate max-w-[160px]">{app.hrEmail}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          <span className="truncate max-w-[300px] block">{app.subject}</span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className={"text-xs " + (STATUS_COLORS[app.status] ?? "")}>
+                            {app.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {app.sentAt ? format(new Date(app.sentAt), "MMM d, yyyy") : app.createdAt ? format(new Date(app.createdAt), "MMM d") : "—"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(app)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteId(app.id)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {/* Mobile Cards */}
+              <div className="md:hidden divide-y">
                 {paginated.map((app: any) => (
-                  <TableRow key={app.id} className="group">
-                    <TableCell className="font-medium text-sm">
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span className="truncate max-w-[160px]">{app.hrEmail}</span>
+                  <div key={app.id} className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="font-medium text-sm truncate">{app.hrEmail}</span>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      <span className="truncate max-w-[300px] block">{app.subject}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={"text-xs " + (STATUS_COLORS[app.status] ?? "")}>
+                      <Badge variant="secondary" className={"text-xs shrink-0 " + (STATUS_COLORS[app.status] ?? "")}>
                         {app.status}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {app.sentAt ? format(new Date(app.sentAt), "MMM d, yyyy") : app.createdAt ? format(new Date(app.createdAt), "MMM d") : "—"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">{app.subject}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">
+                        {app.sentAt ? format(new Date(app.sentAt), "MMM d, yyyy") : app.createdAt ? format(new Date(app.createdAt), "MMM d") : "—"}
+                      </span>
+                      <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(app)}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
@@ -216,11 +251,11 @@ export default function Applications() {
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -242,7 +277,7 @@ export default function Applications() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={showCreate || !!editApp} onOpenChange={(o) => { if (!o) { setShowCreate(false); setEditApp(null); } }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editApp ? "Edit Application" : "New Application"}</DialogTitle>
           </DialogHeader>

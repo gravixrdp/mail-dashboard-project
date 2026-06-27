@@ -74,12 +74,12 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{format(new Date(), "EEEE, MMMM d, yyyy")} &middot; Your job search overview</p>
         </div>
-        <Button onClick={() => setLocation("/compose")} className="gap-2">
+        <Button onClick={() => setLocation("/compose")} className="gap-2 w-full sm:w-auto">
           <Send className="h-4 w-4" />Compose Mail
         </Button>
       </div>

@@ -92,12 +92,12 @@ export default function Companies() {
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Companies</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{filtered.length} companies tracked</p>
         </div>
-        <Button onClick={openCreate} className="gap-2">
+        <Button onClick={openCreate} className="gap-2 w-full sm:w-auto">
           <Plus className="h-4 w-4" />Add Company
         </Button>
       </div>
@@ -139,7 +139,7 @@ export default function Companies() {
                       </Badge>
                     </div>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(company)}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
@@ -174,7 +174,7 @@ export default function Companies() {
       )}
 
       <Dialog open={showCreate || !!editCompany} onOpenChange={(o) => { if (!o) { setShowCreate(false); setEditCompany(null); } }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editCompany ? "Edit Company" : "Add Company"}</DialogTitle>
           </DialogHeader>
