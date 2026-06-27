@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { trpcServer } from "@hono/trpc-server";
 import { appRouter } from "../routers";
 import { drizzle } from "drizzle-orm/d1";
+import { serveStatic } from "hono/cloudflare-workers";
 import * as db from "../db";
 
 type Env = {
@@ -13,9 +14,8 @@ type Env = {
   OWNER_OPEN_ID: string;
   BUILT_IN_FORGE_API_URL?: string;
   BUILT_IN_FORGE_API_KEY?: string;
-  ASSETS: {
-    fetch: (url: string | Request, init?: RequestInit) => Promise<Response>;
-  };
+  __STATIC_CONTENT: string;
+  __STATIC_CONTENT_MANIFEST: string;
 };
 
 const app = new Hono<{ Bindings: Env }>();
@@ -64,41 +64,18 @@ app.use("/api/trpc/*", trpcServer({
   },
 }));
 
-// Handle all GET requests - first try static assets, then fallback to index.html
-app.get("*", async (c) => {
-  try {
-    const path = c.req.path;
-    console.log("Handling GET request for path:", path);
+// Serve static files with correct Hono serveStatic
+app.use("/*", serveStatic({ root: "./dist/public" }));
 
-    // If it's a tRPC request, let trpcServer handle it
-    if (path.startsWith("/api/trpc")) {
-      return; // Let the app.use("/api/trpc/*") handle it
-    }
-
-    // First, try to fetch from Cloudflare ASSETS
-    console.log("Trying to fetch static asset from ASSETS.fetch");
-    const assetRes = await c.env.ASSETS.fetch(c.req.raw);
-    console.log("ASSETS.fetch status:", assetRes.status);
-
-    if (assetRes.ok && assetRes.status !== 404) {
-      console.log("Serving static asset");
-      return assetRes;
-    }
-
-    // If static asset not found, fall back to index.html
-    console.log("Falling back to index.html");
-    const url = new URL(c.req.url);
-    url.pathname = "/index.html";
-    const indexRes = await c.env.ASSETS.fetch(url.toString());
-    console.log("index.html fetch status:", indexRes.status);
-    return new Response(indexRes.body, {
-      status: 200,
-      headers: indexRes.headers,
-    });
-  } catch (err) {
-    console.error("Error handling GET request:", err);
-    return c.text("Internal Server Error: " + (err as Error).message, 500);
+// Fallback all other routes to index.html for SPA (since React Router handles client routing)
+app.get("*", async (c, next) => {
+  const path = c.req.path;
+  // If it's a tRPC path or a static asset (has extension), skip and let next() handle
+  if (path.startsWith("/api/trpc") || path.includes(".")) {
+    return next();
   }
+  // Otherwise, serve index.html for SPA
+  return serveStatic({ path: "index.html", root: "./dist/public" })(c);
 });
 
 export default app;
