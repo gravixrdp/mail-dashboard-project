@@ -31,12 +31,12 @@ import {
 } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  sent: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  replied: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  interview: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  rejected: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  ghosted: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  draft: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
+  sent: "bg-black text-white dark:bg-white dark:text-black",
+  replied: "bg-gray-800 text-white dark:bg-gray-200 dark:text-black",
+  interview: "bg-gray-600 text-white dark:bg-gray-400 dark:text-black",
+  rejected: "bg-gray-400 text-black dark:bg-gray-600 dark:text-white",
+  ghosted: "bg-gray-200 text-black dark:bg-gray-800 dark:text-white",
+  draft: "bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300",
 };
 
 const appSchema = z.object({

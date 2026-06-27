@@ -7,7 +7,7 @@ import {
 } from "recharts";
 import { TrendingUp, Mail, MessageSquare, CheckCircle, XCircle, Percent } from "lucide-react";
 
-const COLORS = ["#3b82f6", "#22c55e", "#a855f7", "#f59e0b", "#ef4444", "#06b6d4"];
+const COLORS = ["#000000", "#333333", "#666666", "#999999", "#CCCCCC", "#E5E5E5"];
 
 export default function Analytics() {
   const { data: stats, isLoading } = trpc.dashboard.stats.useQuery();
@@ -16,12 +16,12 @@ export default function Analytics() {
   const { data: topDomains, isLoading: domainsLoading } = trpc.dashboard.topDomains.useQuery();
 
   const metricCards = [
-    { label: "Total Applications", value: stats?.totalApplications ?? 0, icon: Mail, color: "text-blue-500" },
-    { label: "Replies", value: stats?.replies ?? 0, icon: MessageSquare, color: "text-green-500" },
-    { label: "Interviews", value: stats?.interviews ?? 0, icon: CheckCircle, color: "text-purple-500" },
-    { label: "Rejected", value: stats?.rejected ?? 0, icon: XCircle, color: "text-red-500" },
-    { label: "Response Rate", value: (stats?.responseRate ?? "0") + "%", icon: Percent, color: "text-amber-500" },
-    { label: "This Month", value: stats?.monthApplications ?? 0, icon: TrendingUp, color: "text-cyan-500" },
+    { label: "Total Applications", value: stats?.totalApplications ?? 0, icon: Mail, color: "text-black dark:text-white" },
+    { label: "Replies", value: stats?.replies ?? 0, icon: MessageSquare, color: "text-black dark:text-white" },
+    { label: "Interviews", value: stats?.interviews ?? 0, icon: CheckCircle, color: "text-black dark:text-white" },
+    { label: "Rejected", value: stats?.rejected ?? 0, icon: XCircle, color: "text-black dark:text-white" },
+    { label: "Response Rate", value: (stats?.responseRate ?? "0") + "%", icon: Percent, color: "text-black dark:text-white" },
+    { label: "This Month", value: stats?.monthApplications ?? 0, icon: TrendingUp, color: "text-black dark:text-white" },
   ];
 
   const statusData = [
@@ -73,16 +73,16 @@ export default function Analytics() {
               <AreaChart data={dailyData ?? []} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
                 <defs>
                   <linearGradient id="colorDaily" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#000000" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#000000" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={4} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip contentStyle={{ fontSize: 12 }} />
-                <Area type="monotone" dataKey="applications" stroke="#3b82f6" strokeWidth={2} fill="url(#colorDaily)" name="Applications" />
-                <Area type="monotone" dataKey="replies" stroke="#22c55e" strokeWidth={2} fill="none" name="Replies" />
+                <Area type="monotone" dataKey="applications" stroke="#000000" strokeWidth={2} fill="url(#colorDaily)" name="Applications" />
+                <Area type="monotone" dataKey="replies" stroke="#666666" strokeWidth={2} fill="none" name="Replies" />
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -105,8 +105,8 @@ export default function Analytics() {
                   <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip contentStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="applications" fill="#3b82f6" radius={[3, 3, 0, 0]} name="Applications" />
-                  <Bar dataKey="replies" fill="#22c55e" radius={[3, 3, 0, 0]} name="Replies" />
+                  <Bar dataKey="applications" fill="#000000" radius={[3, 3, 0, 0]} name="Applications" />
+                  <Bar dataKey="replies" fill="#666666" radius={[3, 3, 0, 0]} name="Replies" />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -127,9 +127,9 @@ export default function Analytics() {
                   <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip contentStyle={{ fontSize: 12 }} />
-                  <Line type="monotone" dataKey="replies" stroke="#22c55e" strokeWidth={2} dot={false} name="Replies" />
-                  <Line type="monotone" dataKey="interviews" stroke="#a855f7" strokeWidth={2} dot={false} name="Interviews" />
-                  <Line type="monotone" dataKey="rejections" stroke="#ef4444" strokeWidth={2} dot={false} name="Rejections" />
+                  <Line type="monotone" dataKey="replies" stroke="#000000" strokeWidth={2} dot={false} name="Replies" />
+                  <Line type="monotone" dataKey="interviews" stroke="#666666" strokeWidth={2} dot={false} name="Interviews" />
+                  <Line type="monotone" dataKey="rejections" stroke="#999999" strokeWidth={2} dot={false} name="Rejections" />
                   <Legend iconSize={8} />
                 </LineChart>
               </ResponsiveContainer>

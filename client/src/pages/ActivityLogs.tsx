@@ -29,13 +29,13 @@ const ACTION_ICONS: Record<string, any> = {
 };
 
 const ACTION_COLORS: Record<string, string> = {
-  APPLICATION_SENT: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  APPLICATION_CREATED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  RESUME_UPLOADED: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  TEMPLATE_CREATED: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  SETTINGS_UPDATED: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
-  DUPLICATE_PREVENTED: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  BOUNCE_DETECTED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  APPLICATION_SENT: "bg-black text-white dark:bg-white dark:text-black",
+  APPLICATION_CREATED: "bg-black text-white dark:bg-white dark:text-black",
+  RESUME_UPLOADED: "bg-gray-800 text-white dark:bg-gray-200 dark:text-black",
+  TEMPLATE_CREATED: "bg-gray-600 text-white dark:bg-gray-400 dark:text-black",
+  SETTINGS_UPDATED: "bg-gray-200 text-black dark:bg-gray-800 dark:text-white",
+  DUPLICATE_PREVENTED: "bg-gray-400 text-black dark:bg-gray-600 dark:text-white",
+  BOUNCE_DETECTED: "bg-gray-300 text-black dark:bg-gray-700 dark:text-white",
 };
 
 const PAGE_SIZE = 25;

@@ -536,7 +536,7 @@ export default function ComposeMail() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <AlertTriangle className="h-5 w-5 text-black dark:text-white" />
               Duplicate Detected
             </DialogTitle>
             <DialogDescription>
@@ -544,7 +544,7 @@ export default function ComposeMail() {
             </DialogDescription>
           </DialogHeader>
           {duplicateInfo && (
-            <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 space-y-2 text-sm">
+            <div className="p-3 rounded-lg bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 space-y-2 text-sm">
               <div className="flex gap-2">
                 <span className="text-muted-foreground w-24">Email:</span>
                 <span className="font-medium">{duplicateInfo.hrEmail}</span>

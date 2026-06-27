@@ -16,12 +16,12 @@ import { format } from "date-fns";
 import { useLocation } from "wouter";
 
 const STATUS_COLORS: Record<string, string> = {
-  sent: "#3b82f6",
-  replied: "#22c55e",
-  interview: "#a855f7",
-  rejected: "#ef4444",
-  ghosted: "#f59e0b",
-  draft: "#6b7280",
+  sent: "#000000",
+  replied: "#333333",
+  interview: "#666666",
+  rejected: "#999999",
+  ghosted: "#CCCCCC",
+  draft: "#E5E5E5",
 };
 
 function StatCard({ label, value, icon: Icon, color = "text-primary", description }: any) {
@@ -60,14 +60,14 @@ export default function Dashboard() {
   ].filter(s => s.value > 0);
 
   const statCards = [
-    { label: "Total Applications", value: stats?.totalApplications ?? 0, icon: Mail, color: "text-blue-500", description: "All time" },
-    { label: "Today", value: stats?.todayApplications ?? 0, icon: Calendar, color: "text-purple-500", description: "Sent today" },
-    { label: "This Week", value: stats?.weekApplications ?? 0, icon: Zap, color: "text-amber-500", description: "Last 7 days" },
-    { label: "This Month", value: stats?.monthApplications ?? 0, icon: TrendingUp, color: "text-green-500", description: "Current month" },
-    { label: "Replies", value: stats?.replies ?? 0, icon: MessageSquare, color: "text-green-500", description: "Responses received" },
-    { label: "Interviews", value: stats?.interviews ?? 0, icon: CheckCircle, color: "text-purple-500", description: "Scheduled" },
-    { label: "Rejected", value: stats?.rejected ?? 0, icon: XCircle, color: "text-red-500", description: "Declined" },
-    { label: "Pending", value: stats?.pending ?? 0, icon: Clock, color: "text-amber-500", description: "Awaiting response" },
+    { label: "Total Applications", value: stats?.totalApplications ?? 0, icon: Mail, color: "text-black dark:text-white", description: "All time" },
+    { label: "Today", value: stats?.todayApplications ?? 0, icon: Calendar, color: "text-black dark:text-white", description: "Sent today" },
+    { label: "This Week", value: stats?.weekApplications ?? 0, icon: Zap, color: "text-black dark:text-white", description: "Last 7 days" },
+    { label: "This Month", value: stats?.monthApplications ?? 0, icon: TrendingUp, color: "text-black dark:text-white", description: "Current month" },
+    { label: "Replies", value: stats?.replies ?? 0, icon: MessageSquare, color: "text-black dark:text-white", description: "Responses received" },
+    { label: "Interviews", value: stats?.interviews ?? 0, icon: CheckCircle, color: "text-black dark:text-white", description: "Scheduled" },
+    { label: "Rejected", value: stats?.rejected ?? 0, icon: XCircle, color: "text-black dark:text-white", description: "Declined" },
+    { label: "Pending", value: stats?.pending ?? 0, icon: Clock, color: "text-black dark:text-white", description: "Awaiting response" },
   ];
 
   const responseRate = parseFloat(stats?.responseRate ?? "0");
@@ -146,16 +146,16 @@ export default function Dashboard() {
                 <AreaChart data={weeklyData ?? []} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
                   <defs>
                     <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#000000" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="#000000" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="day" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip contentStyle={{ fontSize: 12 }} />
-                  <Area type="monotone" dataKey="applications" stroke="#3b82f6" strokeWidth={2} fill="url(#colorApps)" name="Applications" />
-                  <Area type="monotone" dataKey="replies" stroke="#22c55e" strokeWidth={2} fill="none" name="Replies" />
+                  <Area type="monotone" dataKey="applications" stroke="#000000" strokeWidth={2} fill="url(#colorApps)" name="Applications" />
+                  <Area type="monotone" dataKey="replies" stroke="#666666" strokeWidth={2} fill="none" name="Replies" />
                 </AreaChart>
               </ResponsiveContainer>
             )}
@@ -175,8 +175,8 @@ export default function Dashboard() {
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip contentStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="applications" fill="#3b82f6" radius={[3, 3, 0, 0]} name="Applications" />
-                  <Bar dataKey="replies" fill="#22c55e" radius={[3, 3, 0, 0]} name="Replies" />
+                  <Bar dataKey="applications" fill="#000000" radius={[3, 3, 0, 0]} name="Applications" />
+                  <Bar dataKey="replies" fill="#666666" radius={[3, 3, 0, 0]} name="Replies" />
                 </BarChart>
               </ResponsiveContainer>
             )}

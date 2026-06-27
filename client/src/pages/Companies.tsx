@@ -35,9 +35,9 @@ const companySchema = z.object({
 type CompanyForm = z.infer<typeof companySchema>;
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  archived: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
-  rejected: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  active: "bg-black text-white dark:bg-white dark:text-black",
+  archived: "bg-gray-200 text-black dark:bg-gray-800 dark:text-white",
+  rejected: "bg-gray-400 text-black dark:bg-gray-600 dark:text-white",
 };
 
 export default function Companies() {
