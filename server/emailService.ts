@@ -13,66 +13,34 @@ interface Attachment {
   contentType?: string;
 }
 
-// MailChannels API for Cloudflare Workers (free)
-// https://api.mailchannels.net/tx/v1/documentation
-async function sendViaMailChannels(
+// Resend API - https://resend.com/docs/api
+async function sendViaResend(
+  apiKey: string,
   fromEmail: string,
   toEmail: string,
   subject: string,
-  html: string,
-  text?: string
+  html: string
 ) {
-  const response = await fetch("https://api.mailchannels.net/tx/v1/email", {
+  const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
+      "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      personalizations: [
-        {
-          to: [{ email: toEmail }],
-        },
-      ],
-      from: {
-        email: fromEmail,
-        name: "JobTracker Dashboard",
-      },
+      from: fromEmail,
+      to: [toEmail],
       subject: subject,
-      content: [
-        {
-          type: "text/plain",
-          value: text || html.replace(/<[^>]*>/g, ""),
-        },
-        {
-          type: "text/html",
-          value: html,
-        },
-      ],
+      html: html,
     }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`MailChannels API error: ${response.status} - ${error}`);
+    throw new Error(`Resend API error: ${response.status} - ${error}`);
   }
 
   return await response.json();
-}
-
-// SMTP fallback using fetch-based approach (no DNS lookup needed)
-async function sendViaSmtpFetch(
-  smtpSettings: SmtpSettings,
-  fromEmail: string,
-  toEmail: string,
-  subject: string,
-  html: string,
-  text?: string
-) {
-  // For Gmail SMTP via fetch, we use a simple approach
-  // In production, you'd use a service like Resend, SendGrid, or Postmark
-  throw new Error(
-    "SMTP not supported on Cloudflare Workers. Please use MailChannels (free) by setting your email in Settings."
-  );
 }
 
 export async function sendEmail(
@@ -91,31 +59,27 @@ export async function sendEmail(
     attachments?: Attachment[];
   }
 ) {
-  console.log("sendEmail called with smtpSettings:", {
+  console.log("sendEmail called:", {
     user: smtpSettings?.user,
-    host: smtpSettings?.host,
-    port: smtpSettings?.port,
-    secure: smtpSettings?.secure,
     passLength: smtpSettings?.pass?.length,
-    attachmentsCount: attachments.length,
   });
 
-  if (!smtpSettings?.user) {
-    throw new Error("Email not configured. Please set your email in Settings.");
+  if (!smtpSettings?.user || !smtpSettings?.pass) {
+    throw new Error("Email not configured. Please set your Resend API key and email in Settings.");
   }
 
   const fromEmail = smtpSettings.user;
+  const apiKey = smtpSettings.pass; // Store Resend API key in SMTP password field
   const emailHtml = html || text || "";
-  const emailText = text || html?.replace(/<[^>]*>/g, "") || "";
 
-  console.log("Sending email via MailChannels...");
+  console.log("Sending email via Resend...");
 
   try {
-    const result = await sendViaMailChannels(fromEmail, to, subject, emailHtml, emailText);
-    console.log("Email sent successfully via MailChannels");
+    const result = await sendViaResend(apiKey, fromEmail, to, subject, emailHtml);
+    console.log("Email sent successfully via Resend");
     return result;
   } catch (error: any) {
-    console.error("MailChannels failed:", error.message);
+    console.error("Resend failed:", error.message);
     throw error;
   }
 }

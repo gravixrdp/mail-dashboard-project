@@ -200,29 +200,17 @@ export default function Settings() {
                   placeholder="you@example.com"
                 />
               </FormField>
-              <FormField label="Password/ App Password">
+              <FormField label="Resend API Key" hint="Get free key at resend.com/api-keys">
                 <Input
                   {...form.register("smtpPass")}
-                  placeholder="Your app password"
+                  placeholder="re_xxxxxxxxxxxxxxxx"
                   type="password"
                 />
               </FormField>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField label="SMTP Host" hint="e.g., smtp.gmail.com">
-                <Input
-                  {...form.register("smtpHost")}
-                  placeholder="smtp.gmail.com"
-                />
-              </FormField>
-              <FormField label="Port" hint="e.g., 587">
-                <Input
-                  type="number"
-                  {...form.register("smtpPort", { valueAsNumber: true })}
-                  placeholder="587"
-                />
-              </FormField>
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Get your free API key at <a href="https://resend.com/api-keys" target="_blank" className="underline">resend.com/api-keys</a> (100 emails/day free)
+            </p>
           </div>
         </Section>
 
