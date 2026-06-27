@@ -65,7 +65,7 @@ app.use("/api/trpc/*", trpcServer({
 }));
 
 // Serve static files (JS, CSS, images, etc.)
-app.use("/*", serveStatic({ root: "./dist/public" }));
+app.use("/*", serveStatic({ root: "./dist/public", manifest: false }));
 
 // Fallback to index.html for SPA routing
 app.get("*", async (c, next) => {
@@ -77,7 +77,7 @@ app.get("*", async (c, next) => {
   }
   
   // Serve index.html for all SPA routes
-  return serveStatic({ path: "index.html", root: "./dist/public" })(c);
+  return serveStatic({ path: "index.html", root: "./dist/public", manifest: false })(c);
 });
 
 export default app;
