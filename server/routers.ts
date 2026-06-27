@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import { sendEmail } from "./emailService";
 
 // Validation schemas
 const companySchema = z.object({
@@ -96,6 +97,32 @@ export const appRouter = router({
       db.getApplicationById(ctx.db, input.id, ctx.user.id)
     ),
     create: protectedProcedure.input(applicationSchema).mutation(async ({ ctx, input }) => {
+      // Get user settings for SMTP
+      const settings = await db.getUserSettings(ctx.db, ctx.user.id);
+      
+      let sentAt = null;
+      
+      if (input.status === "sent") {
+        // Parse SMTP settings from gmailSettings JSON
+        let smtpSettings = null;
+        try {
+          if (settings?.gmailSettings) {
+            smtpSettings = JSON.parse(settings.gmailSettings);
+          }
+        } catch (e) {
+          console.warn("Failed to parse gmailSettings, will not send email", e);
+        }
+        
+        // Send the email
+        await sendEmail(smtpSettings, {
+          to: input.hrEmail,
+          subject: input.subject,
+          text: input.emailBody,
+        });
+        
+        sentAt = new Date().toISOString();
+      }
+
       const result = await db.createApplication(ctx.db, {
         userId: ctx.user.id,
         companyId: input.companyId,
@@ -106,15 +133,19 @@ export const appRouter = router({
         resumeUsed: input.resumeUsed || null,
         templateUsed: input.templateUsed || null,
         notes: input.notes || null,
-        sentAt: null,
+        sentAt,
         repliedAt: null,
       });
+      
       await db.createActivityLog(ctx.db, {
         userId: ctx.user.id,
-        actionType: "APPLICATION_CREATED",
-        description: `Application created for ${input.hrEmail}`,
+        actionType: input.status === "sent" ? "APPLICATION_SENT" : "APPLICATION_CREATED",
+        description: input.status === "sent" 
+          ? `Application sent to ${input.hrEmail}` 
+          : `Application created for ${input.hrEmail}`,
         metadata: JSON.stringify({ companyId: input.companyId, email: input.hrEmail }),
       });
+      
       return result;
     }),
     update: protectedProcedure.input(z.object({ id: z.number(), data: applicationSchema.partial() })).mutation(async ({ ctx, input }) => {
