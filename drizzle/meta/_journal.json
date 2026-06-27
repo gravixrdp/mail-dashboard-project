@@ -8,6 +8,13 @@
       "when": 1782532171659,
       "tag": "0000_open_doctor_faustus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1782539653047,
+      "tag": "0001_rare_reavers",
+      "breakpoints": true
     }
   ]
 }

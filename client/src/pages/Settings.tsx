@@ -29,7 +29,11 @@ const settingsSchema = z.object({
   defaultSubject: z.string().optional(),
   dailySendLimit: z.number().min(1).max(500).optional(),
   emailDelayMs: z.number().min(0).optional(),
-  gmailSettings: z.string().optional(),
+  smtpUser: z.string().optional(),
+  smtpPass: z.string().optional(),
+  smtpHost: z.string().optional(),
+  smtpPort: z.number().optional(),
+  smtpSecure: z.boolean().optional(),
   googleSheetsConfig: z.string().optional(),
   theme: z.enum(["light", "dark", "system"]).optional(),
 });
@@ -83,7 +87,11 @@ export default function Settings() {
       defaultSubject: "",
       dailySendLimit: 50,
       emailDelayMs: 5000,
-      gmailSettings: "",
+      smtpUser: "",
+      smtpPass: "",
+      smtpHost: "smtp.gmail.com",
+      smtpPort: 587,
+      smtpSecure: false,
       googleSheetsConfig: "",
       theme: "system",
     },
@@ -100,7 +108,11 @@ export default function Settings() {
         defaultSubject: settings.defaultSubject ?? "",
         dailySendLimit: settings.dailySendLimit ?? 50,
         emailDelayMs: settings.emailDelayMs ?? 5000,
-        gmailSettings: settings.gmailSettings ?? "",
+        smtpUser: settings.smtpUser ?? "",
+        smtpPass: settings.smtpPass ?? "",
+        smtpHost: settings.smtpHost ?? "smtp.gmail.com",
+        smtpPort: settings.smtpPort ?? 587,
+        smtpSecure: settings.smtpSecure ?? false,
         googleSheetsConfig: settings.googleSheetsConfig ?? "",
         theme: (settings.theme as any) ?? "system",
       });
@@ -178,20 +190,39 @@ export default function Settings() {
           </div>
         </Section>
 
-        {/* Gmail Settings */}
-        <Section title="Gmail Settings" description="Configure Gmail API or SMTP" icon={Settings2}>
-          <FormField label="Gmail Configuration (JSON)" hint="Paste your Gmail API credentials or SMTP settings as JSON">
-            <Textarea
-              {...form.register("gmailSettings")}
-              placeholder='{"type": "smtp", "user": "you@gmail.com", "appPassword": "xxxx"}'
-              rows={5}
-              className="font-mono text-xs"
-            />
-          </FormField>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" size="sm" className="gap-2">
-              <TestTube className="h-4 w-4" />Test Connection
-            </Button>
+        {/* SMTP Settings */}
+        <Section title="Email Settings" description="Configure your email server to send emails" icon={Settings2}>
+          <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Email Address">
+                <Input
+                  {...form.register("smtpUser")}
+                  placeholder="you@example.com"
+                />
+              </FormField>
+              <FormField label="Password/ App Password">
+                <Input
+                  {...form.register("smtpPass")}
+                  placeholder="Your app password"
+                  type="password"
+                />
+              </FormField>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="SMTP Host" hint="e.g., smtp.gmail.com">
+                <Input
+                  {...form.register("smtpHost")}
+                  placeholder="smtp.gmail.com"
+                />
+              </FormField>
+              <FormField label="Port" hint="e.g., 587">
+                <Input
+                  type="number"
+                  {...form.register("smtpPort", { valueAsNumber: true })}
+                  placeholder="587"
+                />
+              </FormField>
+            </div>
           </div>
         </Section>
 

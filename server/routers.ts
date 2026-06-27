@@ -43,7 +43,11 @@ const userSettingsSchema = z.object({
   defaultSubject: z.string().optional(),
   dailySendLimit: z.number().optional(),
   emailDelayMs: z.number().optional(),
-  gmailSettings: z.string().optional(),
+  smtpUser: z.string().optional(),
+  smtpPass: z.string().optional(),
+  smtpHost: z.string().optional(),
+  smtpPort: z.number().optional(),
+  smtpSecure: z.boolean().optional(),
   googleSheetsConfig: z.string().optional(),
   theme: z.enum(["light", "dark", "system"]).optional(),
 });
@@ -103,15 +107,14 @@ export const appRouter = router({
       let sentAt = null;
       
       if (input.status === "sent") {
-        // Parse SMTP settings from gmailSettings JSON
-        let smtpSettings = null;
-        try {
-          if (settings?.gmailSettings) {
-            smtpSettings = JSON.parse(settings.gmailSettings);
-          }
-        } catch (e) {
-          console.warn("Failed to parse gmailSettings, will not send email", e);
-        }
+        // Use the new individual SMTP fields
+        const smtpSettings = {
+          user: settings?.smtpUser,
+          pass: settings?.smtpPass,
+          host: settings?.smtpHost,
+          port: settings?.smtpPort,
+          secure: settings?.smtpSecure,
+        };
         
         // Send the email
         await sendEmail(smtpSettings, {
