@@ -2,7 +2,6 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { trpcServer } from "@hono/trpc-server";
 import { appRouter } from "../routers";
-import { serveStatic } from "hono/cloudflare-workers";
 import { drizzle } from "drizzle-orm/d1";
 import * as db from "../db";
 
@@ -14,6 +13,9 @@ type Env = {
   OWNER_OPEN_ID: string;
   BUILT_IN_FORGE_API_URL?: string;
   BUILT_IN_FORGE_API_KEY?: string;
+  ASSETS: {
+    fetch: (url: string | Request, init?: RequestInit) => Promise<Response>;
+  };
 };
 
 const app = new Hono<{ Bindings: Env }>();
@@ -56,45 +58,28 @@ app.use("/api/trpc/*", trpcServer({
   },
 }));
 
-// Serve static files first, then fallback to index.html for SPA
-app.get("*", async (c, next) => {
-  try {
-    // First, check if it's a request for /api/trpc - if yes, let next() handle it
-    if (c.req.path.startsWith("/api/trpc")) {
-      return next();
-    }
-
-    console.log("Handling request for path:", c.req.path);
-
-    // Try to serve static file
-    let staticRes: Response | null = null;
-    try {
-      staticRes = await serveStatic({ 
-        root: "./dist/public",
-        manifest: false, // Disable manifest to avoid __STATIC_CONTENT_MANIFEST error
-      })(c, next);
-    } catch (e) {
-      console.log("serveStatic failed for regular request:", e);
-    }
-
-    if (staticRes && staticRes.status !== 404) {
-      console.log("Serving static file");
-      return staticRes;
-    }
-
-    // Fallback to index.html for all SPA routes
-    console.log("Falling back to index.html");
-    // Read index.html from assets and return it manually
-    const indexRes = await serveStatic({ 
-      path: "index.html", 
-      root: "./dist/public",
-      manifest: false,
-    })(c);
-    return indexRes;
-  } catch (err) {
-    console.error("Error serving static files:", err);
-    return c.text("Internal Server Error: " + (err as Error).message, 500);
+// Since we're using Cloudflare's assets feature (wrangler.toml assets = ...),
+// Cloudflare will handle static files (js, css, index.html at root). For SPA routes
+// like /compose, /dashboard, etc., we need to serve index.html, but let's let Cloudflare
+// handle the static files first. We'll add a fallback for any path that would 404.
+// Since we can't easily intercept Cloudflare's asset serving, let's add a 404 handler:
+app.notFound(async (c) => {
+  console.log("404 for path:", c.req.path);
+  // If it's an API path, let it 404
+  if (c.req.path.startsWith("/api/")) {
+    return c.json({ error: "Not Found" }, 404);
   }
+  // Otherwise, return index.html for SPA routing
+  console.log("Falling back to index.html for SPA");
+  // We can use c.env.ASSETS.fetch to get index.html from Cloudflare's asset service!
+  const url = new URL(c.req.url);
+  url.pathname = "/index.html";
+  const indexRes = await c.env.ASSETS.fetch(url.toString());
+  // Return the index.html response, but make sure status is 200
+  return new Response(indexRes.body, {
+    status: 200,
+    headers: indexRes.headers,
+  });
 });
 
 export default app;
