@@ -64,17 +64,19 @@ app.use("/api/trpc/*", trpcServer({
   },
 }));
 
-// Serve static files with correct Hono serveStatic
+// Serve static files (JS, CSS, images, etc.)
 app.use("/*", serveStatic({ root: "./dist/public" }));
 
-// Fallback all other routes to index.html for SPA (since React Router handles client routing)
+// Fallback to index.html for SPA routing
 app.get("*", async (c, next) => {
   const path = c.req.path;
-  // If it's a tRPC path or a static asset (has extension), skip and let next() handle
+  
+  // Skip tRPC and static files with extensions
   if (path.startsWith("/api/trpc") || path.includes(".")) {
     return next();
   }
-  // Otherwise, serve index.html for SPA
+  
+  // Serve index.html for all SPA routes
   return serveStatic({ path: "index.html", root: "./dist/public" })(c);
 });
 
