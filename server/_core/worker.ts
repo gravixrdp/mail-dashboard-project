@@ -16,10 +16,14 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.use("*", cors());
 
-app.get("*", serveStatic({ root: "./dist/public" }));
+app.use("*", serveStatic({ root: "./dist/public" }));
+
+app.get("*", (c) => {
+  return serveStatic({ path: "index.html", root: "./dist/public" })(c);
+});
 
 app.onError((err, c) => {
-  console.error(err);
+  console.error("Worker Error:", err);
   return c.text("Internal Server Error", 500);
 });
 
