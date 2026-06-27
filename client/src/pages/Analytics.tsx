@@ -5,41 +5,15 @@ import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { format, subDays, subMonths } from "date-fns";
 import { TrendingUp, Mail, MessageSquare, CheckCircle, XCircle, Percent } from "lucide-react";
-
-const generateDailyData = () =>
-  Array.from({ length: 30 }, (_, i) => ({
-    date: format(subDays(new Date(), 29 - i), "MMM d"),
-    applications: Math.floor(Math.random() * 15) + 1,
-    replies: Math.floor(Math.random() * 4),
-  }));
-
-const generateMonthlyData = () =>
-  Array.from({ length: 12 }, (_, i) => ({
-    month: format(subMonths(new Date(), 11 - i), "MMM"),
-    applications: Math.floor(Math.random() * 100) + 20,
-    replies: Math.floor(Math.random() * 25) + 2,
-    interviews: Math.floor(Math.random() * 8),
-    rejections: Math.floor(Math.random() * 30) + 5,
-  }));
-
-const generateTopDomains = () => [
-  { domain: "gmail.com", count: 45 },
-  { domain: "yahoo.com", count: 32 },
-  { domain: "outlook.com", count: 28 },
-  { domain: "company.com", count: 22 },
-  { domain: "corp.io", count: 18 },
-];
-
-const dailyData = generateDailyData();
-const monthlyData = generateMonthlyData();
-const topDomains = generateTopDomains();
 
 const COLORS = ["#3b82f6", "#22c55e", "#a855f7", "#f59e0b", "#ef4444", "#06b6d4"];
 
 export default function Analytics() {
   const { data: stats, isLoading } = trpc.dashboard.stats.useQuery();
+  const { data: dailyData, isLoading: dailyLoading } = trpc.dashboard.dailyData.useQuery();
+  const { data: monthlyData, isLoading: monthlyLoading } = trpc.dashboard.monthlyData.useQuery();
+  const { data: topDomains, isLoading: domainsLoading } = trpc.dashboard.topDomains.useQuery();
 
   const metricCards = [
     { label: "Total Applications", value: stats?.totalApplications ?? 0, icon: Mail, color: "text-blue-500" },
@@ -92,22 +66,26 @@ export default function Analytics() {
           <CardDescription>Applications sent per day</CardDescription>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={dailyData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
-              <defs>
-                <linearGradient id="colorDaily" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={4} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip contentStyle={{ fontSize: 12 }} />
-              <Area type="monotone" dataKey="applications" stroke="#3b82f6" strokeWidth={2} fill="url(#colorDaily)" name="Applications" />
-              <Area type="monotone" dataKey="replies" stroke="#22c55e" strokeWidth={2} fill="none" name="Replies" />
-            </AreaChart>
-          </ResponsiveContainer>
+          {dailyLoading ? (
+            <Skeleton className="h-[220px] w-full" />
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={dailyData ?? []} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
+                <defs>
+                  <linearGradient id="colorDaily" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={4} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip contentStyle={{ fontSize: 12 }} />
+                <Area type="monotone" dataKey="applications" stroke="#3b82f6" strokeWidth={2} fill="url(#colorDaily)" name="Applications" />
+                <Area type="monotone" dataKey="replies" stroke="#22c55e" strokeWidth={2} fill="none" name="Replies" />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
 
@@ -118,16 +96,20 @@ export default function Analytics() {
             <CardTitle className="text-sm font-semibold">Monthly Applications</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={monthlyData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip contentStyle={{ fontSize: 12 }} />
-                <Bar dataKey="applications" fill="#3b82f6" radius={[3, 3, 0, 0]} name="Applications" />
-                <Bar dataKey="replies" fill="#22c55e" radius={[3, 3, 0, 0]} name="Replies" />
-              </BarChart>
-            </ResponsiveContainer>
+            {monthlyLoading ? (
+              <Skeleton className="h-[200px] w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={monthlyData ?? []} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip contentStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="applications" fill="#3b82f6" radius={[3, 3, 0, 0]} name="Applications" />
+                  <Bar dataKey="replies" fill="#22c55e" radius={[3, 3, 0, 0]} name="Replies" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -136,18 +118,22 @@ export default function Analytics() {
             <CardTitle className="text-sm font-semibold">Response Trend</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={monthlyData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip contentStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="replies" stroke="#22c55e" strokeWidth={2} dot={false} name="Replies" />
-                <Line type="monotone" dataKey="interviews" stroke="#a855f7" strokeWidth={2} dot={false} name="Interviews" />
-                <Line type="monotone" dataKey="rejections" stroke="#ef4444" strokeWidth={2} dot={false} name="Rejections" />
-                <Legend iconSize={8} />
-              </LineChart>
-            </ResponsiveContainer>
+            {monthlyLoading ? (
+              <Skeleton className="h-[200px] w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={monthlyData ?? []} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip contentStyle={{ fontSize: 12 }} />
+                  <Line type="monotone" dataKey="replies" stroke="#22c55e" strokeWidth={2} dot={false} name="Replies" />
+                  <Line type="monotone" dataKey="interviews" stroke="#a855f7" strokeWidth={2} dot={false} name="Interviews" />
+                  <Line type="monotone" dataKey="rejections" stroke="#ef4444" strokeWidth={2} dot={false} name="Rejections" />
+                  <Legend iconSize={8} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -159,7 +145,9 @@ export default function Analytics() {
             <CardTitle className="text-sm font-semibold">Status Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            {statusData.length > 0 ? (
+            {isLoading ? (
+              <Skeleton className="h-[200px] w-full" />
+            ) : statusData.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie data={statusData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
@@ -179,15 +167,19 @@ export default function Analytics() {
             <CardTitle className="text-sm font-semibold">Top Email Domains</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={topDomains} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10 }} />
-                <YAxis type="category" dataKey="domain" tick={{ fontSize: 10 }} width={80} />
-                <Tooltip contentStyle={{ fontSize: 12 }} />
-                <Bar dataKey="count" fill="#3b82f6" radius={[0, 3, 3, 0]} name="Applications" />
-              </BarChart>
-            </ResponsiveContainer>
+            {domainsLoading ? (
+              <Skeleton className="h-[200px] w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={topDomains ?? []} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 10 }} />
+                  <YAxis type="category" dataKey="domain" tick={{ fontSize: 10 }} width={80} />
+                  <Tooltip contentStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="count" fill="#3b82f6" radius={[0, 3, 3, 0]} name="Applications" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>

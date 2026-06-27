@@ -313,6 +313,18 @@ export const appRouter = router({
     stats: protectedProcedure.query(({ ctx }) =>
       db.getDashboardStats(ctx.db, ctx.user.id)
     ),
+    weeklyData: protectedProcedure.query(({ ctx }) =>
+      db.getWeeklyData(ctx.db, ctx.user.id)
+    ),
+    monthlyData: protectedProcedure.query(({ ctx }) =>
+      db.getMonthlyData(ctx.db, ctx.user.id)
+    ),
+    dailyData: protectedProcedure.query(({ ctx }) =>
+      db.getDailyData(ctx.db, ctx.user.id)
+    ),
+    topDomains: protectedProcedure.query(({ ctx }) =>
+      db.getTopDomains(ctx.db, ctx.user.id)
+    ),
   }),
 });
 

@@ -12,25 +12,8 @@ import {
   TrendingUp, Calendar, Send, Activity, ArrowRight,
   Briefcase, Building2, FileText, Zap
 } from "lucide-react";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 import { useLocation } from "wouter";
-
-const generateWeeklyData = () =>
-  Array.from({ length: 7 }, (_, i) => ({
-    day: format(subDays(new Date(), 6 - i), "EEE"),
-    applications: Math.floor(Math.random() * 20) + 2,
-    replies: Math.floor(Math.random() * 5),
-  }));
-
-const generateMonthlyData = () =>
-  Array.from({ length: 12 }, (_, i) => ({
-    month: format(new Date(2024, i, 1), "MMM"),
-    applications: Math.floor(Math.random() * 80) + 10,
-    replies: Math.floor(Math.random() * 20) + 2,
-  }));
-
-const weeklyData = generateWeeklyData();
-const monthlyData = generateMonthlyData();
 
 const STATUS_COLORS: Record<string, string> = {
   sent: "#3b82f6",
@@ -62,6 +45,8 @@ function StatCard({ label, value, icon: Icon, color = "text-primary", descriptio
 
 export default function Dashboard() {
   const { data: stats, isLoading } = trpc.dashboard.stats.useQuery();
+  const { data: weeklyData, isLoading: weeklyLoading } = trpc.dashboard.weeklyData.useQuery();
+  const { data: monthlyData, isLoading: monthlyLoading } = trpc.dashboard.monthlyData.useQuery();
   const { data: applicationsData } = trpc.applications.list.useQuery({ limit: 5 });
   const { data: logs } = trpc.activityLogs.list.useQuery({ limit: 8 });
   const [, setLocation] = useLocation();
@@ -154,22 +139,26 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-semibold">Weekly Applications</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={weeklyData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
-                <defs>
-                  <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip contentStyle={{ fontSize: 12 }} />
-                <Area type="monotone" dataKey="applications" stroke="#3b82f6" strokeWidth={2} fill="url(#colorApps)" name="Applications" />
-                <Area type="monotone" dataKey="replies" stroke="#22c55e" strokeWidth={2} fill="none" name="Replies" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {weeklyLoading ? (
+              <Skeleton className="h-[180px] w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={weeklyData ?? []} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
+                  <defs>
+                    <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip contentStyle={{ fontSize: 12 }} />
+                  <Area type="monotone" dataKey="applications" stroke="#3b82f6" strokeWidth={2} fill="url(#colorApps)" name="Applications" />
+                  <Area type="monotone" dataKey="replies" stroke="#22c55e" strokeWidth={2} fill="none" name="Replies" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -177,16 +166,20 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-semibold">Monthly Trend</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={monthlyData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip contentStyle={{ fontSize: 12 }} />
-                <Bar dataKey="applications" fill="#3b82f6" radius={[3, 3, 0, 0]} name="Applications" />
-                <Bar dataKey="replies" fill="#22c55e" radius={[3, 3, 0, 0]} name="Replies" />
-              </BarChart>
-            </ResponsiveContainer>
+            {monthlyLoading ? (
+              <Skeleton className="h-[180px] w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={monthlyData ?? []} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip contentStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="applications" fill="#3b82f6" radius={[3, 3, 0, 0]} name="Applications" />
+                  <Bar dataKey="replies" fill="#22c55e" radius={[3, 3, 0, 0]} name="Replies" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>

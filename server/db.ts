@@ -152,6 +152,138 @@ export async function upsertUser(db: DrizzleD1Database, data: { openId: string; 
   }
 }
 
+// Helper to parse date strings
+function parseDate(dateStr: string | null): Date | null {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  return isNaN(date.getTime()) ? null : date;
+}
+
+// Get weekly application data
+export async function getWeeklyData(db: DrizzleD1Database, userId: number) {
+  const apps = await db.select().from(applications).where(eq(applications.userId, userId));
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dayStr = d.toLocaleDateString('en-US', { weekday: 'short' });
+    return {
+      day: dayStr,
+      applications: 0,
+      replies: 0
+    };
+  });
+
+  apps.forEach(app => {
+    const createdAt = parseDate(app.createdAt);
+    if (!createdAt) return;
+    
+    const appDate = new Date(createdAt.getFullYear(), createdAt.getMonth(), createdAt.getDate());
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayDiff = Math.floor((today.getTime() - appDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (dayDiff >= 0 && dayDiff < 7) {
+      days[6 - dayDiff].applications++;
+      if (app.status === 'replied') {
+        days[6 - dayDiff].replies++;
+      }
+    }
+  });
+  
+  return days;
+}
+
+// Get monthly application data
+export async function getMonthlyData(db: DrizzleD1Database, userId: number) {
+  const apps = await db.select().from(applications).where(eq(applications.userId, userId));
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - (11 - i));
+    const monthStr = d.toLocaleDateString('en-US', { month: 'short' });
+    return {
+      month: monthStr,
+      applications: 0,
+      replies: 0,
+      interviews: 0,
+      rejections: 0
+    };
+  });
+
+  apps.forEach(app => {
+    const createdAt = parseDate(app.createdAt);
+    if (!createdAt) return;
+    
+    const now = new Date();
+    const monthIndex = createdAt.getMonth();
+    const yearDiff = now.getFullYear() - createdAt.getFullYear();
+    const totalMonthsAgo = yearDiff * 12 + (now.getMonth() - monthIndex);
+    
+    if (totalMonthsAgo >= 0 && totalMonthsAgo < 12) {
+      months[11 - totalMonthsAgo].applications++;
+      if (app.status === 'replied') months[11 - totalMonthsAgo].replies++;
+      if (app.status === 'interview') months[11 - totalMonthsAgo].interviews++;
+      if (app.status === 'rejected') months[11 - totalMonthsAgo].rejections++;
+    }
+  });
+  
+  return months;
+}
+
+// Get daily application data (last 30 days)
+export async function getDailyData(db: DrizzleD1Database, userId: number) {
+  const apps = await db.select().from(applications).where(eq(applications.userId, userId));
+  const days = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (29 - i));
+    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return {
+      date: dateStr,
+      applications: 0,
+      replies: 0
+    };
+  });
+
+  apps.forEach(app => {
+    const createdAt = parseDate(app.createdAt);
+    if (!createdAt) return;
+    
+    const appDate = new Date(createdAt.getFullYear(), createdAt.getMonth(), createdAt.getDate());
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayDiff = Math.floor((today.getTime() - appDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (dayDiff >= 0 && dayDiff < 30) {
+      days[29 - dayDiff].applications++;
+      if (app.status === 'replied') {
+        days[29 - dayDiff].replies++;
+      }
+    }
+  });
+  
+  return days;
+}
+
+// Get top email domains from applications
+export async function getTopDomains(db: DrizzleD1Database, userId: number) {
+  const apps = await db.select().from(applications).where(eq(applications.userId, userId));
+  const domainCounts: Record<string, number> = {};
+
+  apps.forEach(app => {
+    const emailMatch = app.hrEmail.match(/@(.+)$/);
+    if (emailMatch) {
+      const domain = emailMatch[1].toLowerCase();
+      domainCounts[domain] = (domainCounts[domain] || 0) + 1;
+    }
+  });
+
+  const sorted = Object.entries(domainCounts)
+    .map(([domain, count]) => ({ domain, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  return sorted;
+}
+
 // Dashboard stats queries
 export async function getDashboardStats(db: DrizzleD1Database, userId: number) {
   const now = new Date();
@@ -160,9 +292,18 @@ export async function getDashboardStats(db: DrizzleD1Database, userId: number) {
   const monthAgo = new Date(today.getFullYear(), today.getMonth(), 1);
 
   const allApps = await db.select().from(applications).where(eq(applications.userId, userId));
-  const todayApps = allApps.filter(a => new Date(a.createdAt) >= today);
-  const weekApps = allApps.filter(a => new Date(a.createdAt) >= weekAgo);
-  const monthApps = allApps.filter(a => new Date(a.createdAt) >= monthAgo);
+  const todayApps = allApps.filter(a => {
+    const d = parseDate(a.createdAt);
+    return d && new Date(d.getFullYear(), d.getMonth(), d.getDate()) >= today;
+  });
+  const weekApps = allApps.filter(a => {
+    const d = parseDate(a.createdAt);
+    return d && d >= weekAgo;
+  });
+  const monthApps = allApps.filter(a => {
+    const d = parseDate(a.createdAt);
+    return d && d >= monthAgo;
+  });
 
   return {
     totalApplications: allApps.length,
