@@ -146,6 +146,11 @@ pnpm install
 3. **Build/deployment failures**:
    - Check Node.js/pnpm versions match requirements
    - Run `pnpm install` to ensure dependencies are up to date
+   
+4. **SPA routes return "Internal Server Error" on refresh/navigation**:
+   - Ensure all D1 migrations are applied (verify with `npx wrangler d1 migrations list <db-name> --remote`)
+   - The [server/_core/worker.ts](file:///d:/mail-dashboard/mail-dashboard-project/server/_core/worker.ts) has correct fallback logic to serve index.html for client-side routes
+   - Check that the worker.ts fallback checks for staticRes.status !== 404 before falling back to index.html
 
 ---
 
