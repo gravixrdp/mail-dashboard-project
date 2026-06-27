@@ -22,6 +22,12 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.693.0
         version: 3.907.0
+      '@hono/node-server':
+        specifier: ^2.0.6
+        version: 2.0.6(hono@4.12.27)
+      '@hono/trpc-server':
+        specifier: ^0.4.2
+        version: 0.4.2(@trpc/server@11.6.0(typescript@5.9.3))(hono@4.12.27)
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.64.0(react@19.2.1))
@@ -1262,6 +1268,19 @@ packages:
 
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
+
+  '@hono/node-server@2.0.6':
+    resolution: {integrity: sha512-7DeRlKG57JDBNZ5Qj2jwVdgwQy4b0tLubRLl3zCf91/rCf9i7p1V5FtW/yWibm1uUHE493ts9ZXH/7g/LQWl+g==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: ^4
+
+  '@hono/trpc-server@0.4.2':
+    resolution: {integrity: sha512-3TDrc42CZLgcTFkXQba+y7JlRWRiyw1AqhLqztWyNS2IFT+3bHld0lxKdGBttCtGKHYx0505dM67RMazjhdZqw==}
+    engines: {node: '>=16.0.0'}
+    peerDependencies:
+      '@trpc/server': ^10.10.0 || >11.0.0-rc
+      hono: '>=4.0.0'
 
   '@hookform/resolvers@5.2.2':
     resolution: {integrity: sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA==}
@@ -6056,6 +6075,15 @@ snapshots:
       react-dom: 19.2.1(react@19.2.1)
 
   '@floating-ui/utils@0.2.10': {}
+
+  '@hono/node-server@2.0.6(hono@4.12.27)':
+    dependencies:
+      hono: 4.12.27
+
+  '@hono/trpc-server@0.4.2(@trpc/server@11.6.0(typescript@5.9.3))(hono@4.12.27)':
+    dependencies:
+      '@trpc/server': 11.6.0(typescript@5.9.3)
+      hono: 4.12.27
 
   '@hookform/resolvers@5.2.2(react-hook-form@7.64.0(react@19.2.1))':
     dependencies:

@@ -1,15 +1,14 @@
-import { eq, and, desc, like, inArray } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { eq, and, desc } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/d1";
 import { InsertUser, users, companies, applications, emailTemplates, resumes, activityLogs, userSettings, emailQueue, type Company, type Application, type EmailTemplate, type Resume, type ActivityLog, type UserSettings, type EmailQueue } from "../drizzle/schema";
-import { ENV } from './_core/env';
 
+// For Cloudflare Workers, we'll get the D1 binding from context
 let _db: ReturnType<typeof drizzle> | null = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
-export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
+export async function getDb(env?: any) {
+  if (env && env.DB) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _db = drizzle(env.DB);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;

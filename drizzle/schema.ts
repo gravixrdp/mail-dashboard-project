@@ -1,208 +1,142 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, index } from "drizzle-orm/mysql-core";
+import { integer, sqliteTable, text, real } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
 
-/**
- * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
- */
-export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
-  id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  openId: text("openId").notNull().unique(),
   name: text("name"),
-  email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  email: text("email"),
+  loginMethod: text("loginMethod"),
+  role: text("role").default("user").notNull(),
+  createdAt: text("createdAt").$defaultFn(() => new Date().toISOString()).notNull(),
+  updatedAt: text("updatedAt").$defaultFn(() => new Date().toISOString()).notNull(),
+  lastSignedIn: text("lastSignedIn").$defaultFn(() => new Date().toISOString()).notNull(),
 });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// Companies table
-export const companies = mysqlTable(
-  "companies",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    name: varchar("name", { length: 255 }).notNull(),
-    emails: text("emails").notNull(),
-    notes: text("notes"),
-    status: mysqlEnum("status", ["active", "archived", "rejected"]).default("active").notNull(),
-    firstAppliedAt: timestamp("firstAppliedAt"),
-    lastAppliedAt: timestamp("lastAppliedAt"),
-    applicationCount: int("applicationCount").default(0).notNull(),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    userIdIdx: index("companies_userId_idx").on(table.userId),
-  })
-);
+export const companies = sqliteTable("companies", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId").notNull(),
+  name: text("name").notNull(),
+  emails: text("emails").notNull(),
+  notes: text("notes"),
+  status: text("status").default("active").notNull(),
+  firstAppliedAt: text("firstAppliedAt"),
+  lastAppliedAt: text("lastAppliedAt"),
+  applicationCount: integer("applicationCount").default(0).notNull(),
+  createdAt: text("createdAt").$defaultFn(() => new Date().toISOString()).notNull(),
+  updatedAt: text("updatedAt").$defaultFn(() => new Date().toISOString()).notNull(),
+});
 
 export type Company = typeof companies.$inferSelect;
 export type InsertCompany = typeof companies.$inferInsert;
 
-// Applications table
-export const applications = mysqlTable(
-  "applications",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    companyId: int("companyId").notNull(),
-    hrEmail: varchar("hrEmail", { length: 320 }).notNull(),
-    subject: varchar("subject", { length: 500 }).notNull(),
-    emailBody: text("emailBody").notNull(),
-    status: mysqlEnum("status", ["sent", "replied", "interview", "rejected", "ghosted", "draft"]).default("draft").notNull(),
-    resumeUsed: varchar("resumeUsed", { length: 255 }),
-    templateUsed: varchar("templateUsed", { length: 255 }),
-    notes: text("notes"),
-    sentAt: timestamp("sentAt"),
-    repliedAt: timestamp("repliedAt"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    userIdIdx: index("applications_userId_idx").on(table.userId),
-    companyIdIdx: index("applications_companyId_idx").on(table.companyId),
-    statusIdx: index("applications_status_idx").on(table.status),
-  })
-);
+export const applications = sqliteTable("applications", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId").notNull(),
+  companyId: integer("companyId").notNull(),
+  hrEmail: text("hrEmail").notNull(),
+  subject: text("subject").notNull(),
+  emailBody: text("emailBody").notNull(),
+  status: text("status").default("draft").notNull(),
+  resumeUsed: text("resumeUsed"),
+  templateUsed: text("templateUsed"),
+  notes: text("notes"),
+  sentAt: text("sentAt"),
+  repliedAt: text("repliedAt"),
+  createdAt: text("createdAt").$defaultFn(() => new Date().toISOString()).notNull(),
+  updatedAt: text("updatedAt").$defaultFn(() => new Date().toISOString()).notNull(),
+});
 
 export type Application = typeof applications.$inferSelect;
 export type InsertApplication = typeof applications.$inferInsert;
 
-// Email Templates table
-export const emailTemplates = mysqlTable(
-  "emailTemplates",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    name: varchar("name", { length: 255 }).notNull(),
-    subject: varchar("subject", { length: 500 }).notNull(),
-    body: text("body").notNull(),
-    category: varchar("category", { length: 100 }),
-    variables: text("variables"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    userIdIdx: index("emailTemplates_userId_idx").on(table.userId),
-  })
-);
+export const emailTemplates = sqliteTable("emailTemplates", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId").notNull(),
+  name: text("name").notNull(),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  category: text("category"),
+  variables: text("variables"),
+  createdAt: text("createdAt").$defaultFn(() => new Date().toISOString()).notNull(),
+  updatedAt: text("updatedAt").$defaultFn(() => new Date().toISOString()).notNull(),
+});
 
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type InsertEmailTemplate = typeof emailTemplates.$inferInsert;
 
-// Resumes table
-export const resumes = mysqlTable(
-  "resumes",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    filename: varchar("filename", { length: 255 }).notNull(),
-    fileKey: varchar("fileKey", { length: 255 }).notNull(),
-    fileUrl: text("fileUrl").notNull(),
-    isDefault: boolean("isDefault").default(false).notNull(),
-    fileSize: int("fileSize"),
-    mimeType: varchar("mimeType", { length: 100 }),
-    uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    userIdIdx: index("resumes_userId_idx").on(table.userId),
-    isDefaultIdx: index("resumes_isDefault_idx").on(table.isDefault),
-  })
-);
+export const resumes = sqliteTable("resumes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId").notNull(),
+  filename: text("filename").notNull(),
+  fileKey: text("fileKey").notNull(),
+  fileUrl: text("fileUrl").notNull(),
+  isDefault: integer("isDefault", { mode: "boolean" }).default(false).notNull(),
+  fileSize: integer("fileSize"),
+  mimeType: text("mimeType"),
+  uploadedAt: text("uploadedAt").$defaultFn(() => new Date().toISOString()).notNull(),
+  createdAt: text("createdAt").$defaultFn(() => new Date().toISOString()).notNull(),
+  updatedAt: text("updatedAt").$defaultFn(() => new Date().toISOString()).notNull(),
+});
 
 export type Resume = typeof resumes.$inferSelect;
 export type InsertResume = typeof resumes.$inferInsert;
 
-// Activity Logs table
-export const activityLogs = mysqlTable(
-  "activityLogs",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    actionType: varchar("actionType", { length: 100 }).notNull(),
-    description: text("description").notNull(),
-    metadata: text("metadata"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-  },
-  (table) => ({
-    userIdIdx: index("activityLogs_userId_idx").on(table.userId),
-    actionTypeIdx: index("activityLogs_actionType_idx").on(table.actionType),
-  })
-);
+export const activityLogs = sqliteTable("activityLogs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId").notNull(),
+  actionType: text("actionType").notNull(),
+  description: text("description").notNull(),
+  metadata: text("metadata"),
+  createdAt: text("createdAt").$defaultFn(() => new Date().toISOString()).notNull(),
+});
 
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export type InsertActivityLog = typeof activityLogs.$inferInsert;
 
-// User Settings table
-export const userSettings = mysqlTable(
-  "userSettings",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull().unique(),
-    phone: varchar("phone", { length: 20 }),
-    portfolio: text("portfolio"),
-    github: text("github"),
-    linkedin: text("linkedin"),
-    signature: text("signature"),
-    defaultResumeId: int("defaultResumeId"),
-    defaultSubject: text("defaultSubject"),
-    dailySendLimit: int("dailySendLimit").default(50).notNull(),
-    emailDelayMs: int("emailDelayMs").default(5000).notNull(),
-    gmailSettings: text("gmailSettings"),
-    googleSheetsConfig: text("googleSheetsConfig"),
-    theme: mysqlEnum("theme", ["light", "dark", "system"]).default("system").notNull(),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    userIdIdx: index("userSettings_userId_idx").on(table.userId),
-  })
-);
+export const userSettings = sqliteTable("userSettings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId").notNull().unique(),
+  phone: text("phone"),
+  portfolio: text("portfolio"),
+  github: text("github"),
+  linkedin: text("linkedin"),
+  signature: text("signature"),
+  defaultResumeId: integer("defaultResumeId"),
+  defaultSubject: text("defaultSubject"),
+  dailySendLimit: integer("dailySendLimit").default(50).notNull(),
+  emailDelayMs: integer("emailDelayMs").default(5000).notNull(),
+  gmailSettings: text("gmailSettings"),
+  googleSheetsConfig: text("googleSheetsConfig"),
+  theme: text("theme").default("system").notNull(),
+  createdAt: text("createdAt").$defaultFn(() => new Date().toISOString()).notNull(),
+  updatedAt: text("updatedAt").$defaultFn(() => new Date().toISOString()).notNull(),
+});
 
 export type UserSettings = typeof userSettings.$inferSelect;
 export type InsertUserSettings = typeof userSettings.$inferInsert;
 
-// Email Queue table
-export const emailQueue = mysqlTable(
-  "emailQueue",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    applicationId: int("applicationId"),
-    recipient: varchar("recipient", { length: 320 }).notNull(),
-    subject: varchar("subject", { length: 500 }).notNull(),
-    body: text("body").notNull(),
-    status: mysqlEnum("status", ["pending", "sent", "failed", "cancelled"]).default("pending").notNull(),
-    scheduledAt: timestamp("scheduledAt"),
-    sentAt: timestamp("sentAt"),
-    failureReason: text("failureReason"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    userIdIdx: index("emailQueue_userId_idx").on(table.userId),
-    statusIdx: index("emailQueue_status_idx").on(table.status),
-    scheduledAtIdx: index("emailQueue_scheduledAt_idx").on(table.scheduledAt),
-  })
-);
+export const emailQueue = sqliteTable("emailQueue", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId").notNull(),
+  applicationId: integer("applicationId"),
+  recipient: text("recipient").notNull(),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  status: text("status").default("pending").notNull(),
+  scheduledAt: text("scheduledAt"),
+  sentAt: text("sentAt"),
+  failureReason: text("failureReason"),
+  createdAt: text("createdAt").$defaultFn(() => new Date().toISOString()).notNull(),
+  updatedAt: text("updatedAt").$defaultFn(() => new Date().toISOString()).notNull(),
+});
 
 export type EmailQueue = typeof emailQueue.$inferSelect;
 export type InsertEmailQueue = typeof emailQueue.$inferInsert;
 
-// Relations
 export const companiesRelations = relations(companies, ({ many }) => ({
   applications: many(applications),
 }));

@@ -1,5 +1,5 @@
 name = "mail-dashboard"
-main = "dist/index.js"
+main = "server/_core/worker.ts"
 compatibility_date = "2026-06-27"
 compatibility_flags = ["nodejs_compat"]
 
@@ -14,8 +14,8 @@ database_id = "2b12481c-8bf8-4eaf-882a-bf204d5fdcc6"
 [site]
 bucket = "./dist/public"
 
-[build]
-command = "pnpm build"
+# [build]
+# command = "pnpm build"
 
 [env.production]
 name = "mail-dashboard-production"
