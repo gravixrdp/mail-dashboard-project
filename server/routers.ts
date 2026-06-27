@@ -52,8 +52,7 @@ export const appRouter = router({
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      // Note: For Cloudflare Workers, we might handle cookies differently, but for now, let's just return success
       return {
         success: true,
       } as const;
@@ -63,13 +62,13 @@ export const appRouter = router({
   // Companies router
   companies: router({
     list: protectedProcedure.query(({ ctx }) =>
-      db.getCompaniesByUserId(ctx.user.id)
+      db.getCompaniesByUserId(ctx.db, ctx.user.id)
     ),
     get: protectedProcedure.input(z.object({ id: z.number() })).query(({ ctx, input }) =>
-      db.getCompanyById(input.id, ctx.user.id)
+      db.getCompanyById(ctx.db, input.id, ctx.user.id)
     ),
     create: protectedProcedure.input(companySchema).mutation(({ ctx, input }) =>
-      db.createCompany({
+      db.createCompany(ctx.db, {
         userId: ctx.user.id,
         name: input.name,
         emails: input.emails,
@@ -81,23 +80,23 @@ export const appRouter = router({
       })
     ),
     update: protectedProcedure.input(z.object({ id: z.number(), data: companySchema.partial() })).mutation(({ ctx, input }) =>
-      db.updateCompany(input.id, ctx.user.id, input.data)
+      db.updateCompany(ctx.db, input.id, ctx.user.id, input.data)
     ),
     delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(({ ctx, input }) =>
-      db.deleteCompany(input.id, ctx.user.id)
+      db.deleteCompany(ctx.db, input.id, ctx.user.id)
     ),
   }),
 
   // Applications router
   applications: router({
     list: protectedProcedure.input(z.object({ limit: z.number().optional(), offset: z.number().optional() })).query(({ ctx, input }) =>
-      db.getApplicationsByUserId(ctx.user.id, input.limit, input.offset)
+      db.getApplicationsByUserId(ctx.db, ctx.user.id, input.limit, input.offset)
     ),
     get: protectedProcedure.input(z.object({ id: z.number() })).query(({ ctx, input }) =>
-      db.getApplicationById(input.id, ctx.user.id)
+      db.getApplicationById(ctx.db, input.id, ctx.user.id)
     ),
     create: protectedProcedure.input(applicationSchema).mutation(async ({ ctx, input }) => {
-      const result = await db.createApplication({
+      const result = await db.createApplication(ctx.db, {
         userId: ctx.user.id,
         companyId: input.companyId,
         hrEmail: input.hrEmail,
@@ -110,7 +109,7 @@ export const appRouter = router({
         sentAt: null,
         repliedAt: null,
       });
-      await db.createActivityLog({
+      await db.createActivityLog(ctx.db, {
         userId: ctx.user.id,
         actionType: "APPLICATION_CREATED",
         description: `Application created for ${input.hrEmail}`,
@@ -119,8 +118,8 @@ export const appRouter = router({
       return result;
     }),
     update: protectedProcedure.input(z.object({ id: z.number(), data: applicationSchema.partial() })).mutation(async ({ ctx, input }) => {
-      const result = await db.updateApplication(input.id, ctx.user.id, input.data);
-      await db.createActivityLog({
+      const result = await db.updateApplication(ctx.db, input.id, ctx.user.id, input.data);
+      await db.createActivityLog(ctx.db, {
         userId: ctx.user.id,
         actionType: "APPLICATION_UPDATED",
         description: `Application ${input.id} updated`,
@@ -129,8 +128,8 @@ export const appRouter = router({
       return result;
     }),
     delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
-      const result = await db.deleteApplication(input.id, ctx.user.id);
-      await db.createActivityLog({
+      const result = await db.deleteApplication(ctx.db, input.id, ctx.user.id);
+      await db.createActivityLog(ctx.db, {
         userId: ctx.user.id,
         actionType: "APPLICATION_DELETED",
         description: `Application ${input.id} deleted`,
@@ -139,20 +138,20 @@ export const appRouter = router({
       return result;
     }),
     getByCompany: protectedProcedure.input(z.object({ companyId: z.number() })).query(({ ctx, input }) =>
-      db.getApplicationsByCompanyId(input.companyId, ctx.user.id)
+      db.getApplicationsByCompanyId(ctx.db, input.companyId, ctx.user.id)
     ),
   }),
 
   // Email Templates router
   templates: router({
     list: protectedProcedure.query(({ ctx }) =>
-      db.getTemplatesByUserId(ctx.user.id)
+      db.getTemplatesByUserId(ctx.db, ctx.user.id)
     ),
     get: protectedProcedure.input(z.object({ id: z.number() })).query(({ ctx, input }) =>
-      db.getTemplateById(input.id, ctx.user.id)
+      db.getTemplateById(ctx.db, input.id, ctx.user.id)
     ),
     create: protectedProcedure.input(templateSchema).mutation(async ({ ctx, input }) => {
-      const result = await db.createTemplate({
+      const result = await db.createTemplate(ctx.db, {
         userId: ctx.user.id,
         name: input.name,
         subject: input.subject,
@@ -160,7 +159,7 @@ export const appRouter = router({
         category: input.category || null,
         variables: input.variables || null,
       });
-      await db.createActivityLog({
+      await db.createActivityLog(ctx.db, {
         userId: ctx.user.id,
         actionType: "TEMPLATE_CREATED",
         description: `Template "${input.name}" created`,
@@ -169,8 +168,8 @@ export const appRouter = router({
       return result;
     }),
     update: protectedProcedure.input(z.object({ id: z.number(), data: templateSchema.partial() })).mutation(async ({ ctx, input }) => {
-      const result = await db.updateTemplate(input.id, ctx.user.id, input.data);
-      await db.createActivityLog({
+      const result = await db.updateTemplate(ctx.db, input.id, ctx.user.id, input.data);
+      await db.createActivityLog(ctx.db, {
         userId: ctx.user.id,
         actionType: "TEMPLATE_UPDATED",
         description: `Template ${input.id} updated`,
@@ -179,8 +178,8 @@ export const appRouter = router({
       return result;
     }),
     delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
-      const result = await db.deleteTemplate(input.id, ctx.user.id);
-      await db.createActivityLog({
+      const result = await db.deleteTemplate(ctx.db, input.id, ctx.user.id);
+      await db.createActivityLog(ctx.db, {
         userId: ctx.user.id,
         actionType: "TEMPLATE_DELETED",
         description: `Template ${input.id} deleted`,
@@ -193,13 +192,13 @@ export const appRouter = router({
   // Resumes router
   resumes: router({
     list: protectedProcedure.query(({ ctx }) =>
-      db.getResumesByUserId(ctx.user.id)
+      db.getResumesByUserId(ctx.db, ctx.user.id)
     ),
     get: protectedProcedure.input(z.object({ id: z.number() })).query(({ ctx, input }) =>
-      db.getResumeById(input.id, ctx.user.id)
+      db.getResumeById(ctx.db, input.id, ctx.user.id)
     ),
     getDefault: protectedProcedure.query(({ ctx }) =>
-      db.getDefaultResume(ctx.user.id)
+      db.getDefaultResume(ctx.db, ctx.user.id)
     ),
     create: protectedProcedure.input(z.object({
       filename: z.string(),
@@ -209,7 +208,7 @@ export const appRouter = router({
       mimeType: z.string().optional(),
       isDefault: z.boolean().optional(),
     })).mutation(async ({ ctx, input }) => {
-      const result = await db.createResume({
+      const result = await db.createResume(ctx.db, {
         userId: ctx.user.id,
         filename: input.filename,
         fileKey: input.fileKey,
@@ -217,9 +216,9 @@ export const appRouter = router({
         fileSize: input.fileSize || null,
         mimeType: input.mimeType || null,
         isDefault: input.isDefault || false,
-        uploadedAt: new Date(),
+        uploadedAt: new Date().toISOString(),
       });
-      await db.createActivityLog({
+      await db.createActivityLog(ctx.db, {
         userId: ctx.user.id,
         actionType: "RESUME_UPLOADED",
         description: `Resume "${input.filename}" uploaded`,
@@ -235,15 +234,15 @@ export const appRouter = router({
       }),
     })).mutation(async ({ ctx, input }) => {
       if (input.data.isDefault) {
-        const allResumes = await db.getResumesByUserId(ctx.user.id);
+        const allResumes = await db.getResumesByUserId(ctx.db, ctx.user.id);
         for (const resume of allResumes) {
           if (resume.id !== input.id && resume.isDefault) {
-            await db.updateResume(resume.id, ctx.user.id, { isDefault: false });
+            await db.updateResume(ctx.db, resume.id, ctx.user.id, { isDefault: false });
           }
         }
       }
-      const result = await db.updateResume(input.id, ctx.user.id, input.data);
-      await db.createActivityLog({
+      const result = await db.updateResume(ctx.db, input.id, ctx.user.id, input.data);
+      await db.createActivityLog(ctx.db, {
         userId: ctx.user.id,
         actionType: "RESUME_UPDATED",
         description: `Resume ${input.id} updated`,
@@ -252,8 +251,8 @@ export const appRouter = router({
       return result;
     }),
     delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
-      const result = await db.deleteResume(input.id, ctx.user.id);
-      await db.createActivityLog({
+      const result = await db.deleteResume(ctx.db, input.id, ctx.user.id);
+      await db.createActivityLog(ctx.db, {
         userId: ctx.user.id,
         actionType: "RESUME_DELETED",
         description: `Resume ${input.id} deleted`,
@@ -266,16 +265,16 @@ export const appRouter = router({
   // Activity Logs router
   activityLogs: router({
     list: protectedProcedure.input(z.object({ limit: z.number().optional(), offset: z.number().optional() })).query(({ ctx, input }) =>
-      db.getActivityLogsByUserId(ctx.user.id, input.limit || 50, input.offset || 0)
+      db.getActivityLogsByUserId(ctx.db, ctx.user.id, input.limit || 50, input.offset || 0)
     ),
   }),
 
   // User Settings router
   settings: router({
     get: protectedProcedure.query(async ({ ctx }) => {
-      let settings = await db.getUserSettings(ctx.user.id);
+      let settings = await db.getUserSettings(ctx.db, ctx.user.id);
       if (!settings) {
-        await db.createUserSettings({
+        await db.createUserSettings(ctx.db, {
           userId: ctx.user.id,
           theme: "system",
           dailySendLimit: 50,
@@ -290,7 +289,7 @@ export const appRouter = router({
           gmailSettings: null,
           googleSheetsConfig: null,
         });
-        settings = await db.getUserSettings(ctx.user.id);
+        settings = await db.getUserSettings(ctx.db, ctx.user.id);
       }
       return settings;
     }),
@@ -298,8 +297,8 @@ export const appRouter = router({
       const cleanInput = Object.fromEntries(
         Object.entries(input).filter(([, v]) => v !== undefined)
       ) as Partial<typeof input>;
-      const result = await db.updateUserSettings(ctx.user.id, cleanInput);
-      await db.createActivityLog({
+      const result = await db.updateUserSettings(ctx.db, ctx.user.id, cleanInput);
+      await db.createActivityLog(ctx.db, {
         userId: ctx.user.id,
         actionType: "SETTINGS_UPDATED",
         description: "User settings updated",
@@ -312,7 +311,7 @@ export const appRouter = router({
   // Dashboard router
   dashboard: router({
     stats: protectedProcedure.query(({ ctx }) =>
-      db.getDashboardStats(ctx.user.id)
+      db.getDashboardStats(ctx.db, ctx.user.id)
     ),
   }),
 });

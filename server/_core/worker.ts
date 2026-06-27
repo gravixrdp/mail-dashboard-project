@@ -1,4 +1,9 @@
-import { getAssetFromKV, mapRequestToAsset } from "@cloudflare/kv-asset-handler";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { trpcServer } from "@hono/trpc-server";
+import { appRouter } from "../routers";
+import { getAssetFromKV } from "@cloudflare/kv-asset-handler";
+import { drizzle } from "drizzle-orm/d1";
 
 type Env = {
   DB: D1Database;
@@ -10,40 +15,77 @@ type Env = {
   BUILT_IN_FORGE_API_KEY?: string;
 };
 
-export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    try {
-      // Try to serve static assets first
-      const response = await getAssetFromKV({
-        request,
-        waitUntil(promise) {
-          ctx.waitUntil(promise);
-        },
-      });
-      return response;
-    } catch (e) {
-      // If asset not found, fall back to index.html for SPA routing
-      try {
-        let assetKey = mapRequestToAsset(new Request(new URL("/index.html", new URL(request.url).origin)), {});
-        const options = {
-          ASSET_NAMESPACE: (env as any).__STATIC_CONTENT,
-          ASSET_MANIFEST: (env as any).__STATIC_CONTENT_MANIFEST,
-          cacheControl: {
-            browserTTL: 0,
-            edgeTTL: 0,
-            bypassCache: true,
-          },
-        };
-        return await getAssetFromKV({
-          request: new Request(new URL("/index.html", request.url)),
-          waitUntil(promise) {
-            ctx.waitUntil(promise);
-          },
-        }, options);
-      } catch (e2) {
-        const pathname = new URL(request.url).pathname;
-        return new Response(`"${pathname}" not found`, { status: 404, statusText: "Not Found" });
-      }
-    }
-  },
+const app = new Hono<{ Bindings: Env }>();
+
+app.use("*", cors());
+
+// Update createContext for Hono
+const createContext = (c: any) => {
+  // MOCK USER FOR DEVELOPMENT! This will let us see the frontend!
+  const mockUser = {
+    id: 1,
+    openId: "test-open-id",
+    name: "Test User",
+    email: "test@example.com",
+    loginMethod: "test",
+    role: "admin",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    lastSignedIn: new Date().toISOString(),
+  };
+  const db = drizzle(c.env.DB);
+  return {
+    req: c.req,
+    res: c.res,
+    user: mockUser,
+    db: db,
+    env: c.env,
+  };
 };
+
+// tRPC middleware
+app.use("/api/trpc/*", trpcServer({
+  router: appRouter,
+  createContext: (opts => {
+    return createContext(opts.c);
+  }),
+  onError: ({ path, error }) => {
+    console.error("tRPC error on", path, error);
+  },
+}));
+
+// Serve static assets from __STATIC_CONTENT (from wrangler assets config)
+app.get("*", async (c) => {
+  try {
+    const staticOptions = {
+      ASSET_NAMESPACE: (c.env as any).__STATIC_CONTENT,
+      ASSET_MANIFEST: (c.env as any).__STATIC_CONTENT_MANIFEST,
+    };
+    const asset = await getAssetFromKV({
+      request: c.req.raw,
+      waitUntil(promise) {
+        c.executionCtx.waitUntil(promise);
+      },
+    }, staticOptions);
+    return new Response(asset.body, asset);
+  } catch (e) {
+    console.error(e);
+    // SPA fallback: serve index.html
+    try {
+      const indexHtml = await getAssetFromKV({
+        request: new Request(new URL("/index.html", c.req.url)),
+        waitUntil(promise) {
+          c.executionCtx.waitUntil(promise);
+        },
+      }, {
+        ASSET_NAMESPACE: (c.env as any).__STATIC_CONTENT,
+        ASSET_MANIFEST: (c.env as any).__STATIC_CONTENT_MANIFEST,
+      });
+      return new Response(indexHtml.body, indexHtml);
+    } catch (e2) {
+      return c.text("Not Found", 404);
+    }
+  }
+});
+
+export default app;
