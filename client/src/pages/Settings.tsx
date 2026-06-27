@@ -200,21 +200,36 @@ export default function Settings() {
                   placeholder="you@example.com"
                 />
               </FormField>
-              <FormField label="Resend API Key" hint="Free - get from resend.com">
+              <FormField label="Gmail App Password" hint="NOT your login password - use App Password">
                 <Input
                   {...form.register("smtpPass")}
-                  placeholder="re_xxxxxxxxxxxxxxxx"
+                  placeholder="xxxx xxxx xxxx xxxx"
                   type="password"
                 />
               </FormField>
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="SMTP Host">
+                <Input
+                  {...form.register("smtpHost")}
+                  placeholder="smtp.gmail.com"
+                />
+              </FormField>
+              <FormField label="Port">
+                <Input
+                  type="number"
+                  {...form.register("smtpPort", { valueAsNumber: true })}
+                  placeholder="587"
+                />
+              </FormField>
+            </div>
             <div className="p-3 rounded-lg bg-muted text-xs space-y-1">
-              <p className="font-medium">How to setup (2 minutes):</p>
-              <p>1. Go to <a href="https://resend.com" target="_blank" className="underline font-medium">resend.com</a> and create free account</p>
-              <p>2. Go to API Keys, create one, copy it</p>
-              <p>3. Go to Domains, verify your email (click link in email)</p>
-              <p>4. Paste API key above, save settings</p>
-              <p className="text-muted-foreground">Free: 100 emails/day. Emails show as "from your@email.com"</p>
+              <p className="font-medium">Gmail Setup (2 minutes):</p>
+              <p>1. Go to <a href="https://myaccount.google.com/security" target="_blank" className="underline">myaccount.google.com/security</a></p>
+              <p>2. Enable <b>2-Step Verification</b> (must)</p>
+              <p>3. Go to <a href="https://myaccount.google.com/apppasswords" target="_blank" className="underline">myaccount.google.com/apppasswords</a></p>
+              <p>4. Create App Password, copy the 16-digit code</p>
+              <p>5. Paste above, save settings</p>
             </div>
           </div>
         </Section>

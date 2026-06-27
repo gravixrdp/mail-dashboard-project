@@ -1,3 +1,5 @@
+import nodemailer from "nodemailer";
+
 interface SmtpSettings {
   host?: string;
   port?: number;
@@ -29,42 +31,53 @@ export async function sendEmail(
     attachments?: Attachment[];
   }
 ) {
-  console.log("sendEmail called:", {
+  console.log("sendEmail called with smtpSettings:", {
     user: smtpSettings?.user,
+    host: smtpSettings?.host,
+    port: smtpSettings?.port,
+    secure: smtpSettings?.secure,
     passLength: smtpSettings?.pass?.length,
+    attachmentsCount: attachments.length,
   });
 
   if (!smtpSettings?.user || !smtpSettings?.pass) {
-    throw new Error("Email not configured. Please set your email and API key in Settings.");
+    throw new Error("SMTP settings not configured. Please set your email and password in Settings.");
   }
 
-  const fromEmail = smtpSettings.user;
-  const apiKey = smtpSettings.pass;
-  const emailHtml = html || text || "";
-
-  console.log("Sending email via Resend API...");
-
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
+  // Default to Gmail settings if host not provided
+  const transporterConfig = {
+    host: smtpSettings.host || "smtp.gmail.com",
+    port: smtpSettings.port || 587,
+    secure: smtpSettings.secure ?? false,
+    auth: {
+      user: smtpSettings.user,
+      pass: smtpSettings.pass,
     },
-    body: JSON.stringify({
-      from: fromEmail,
-      to: [to],
-      subject: subject,
-      html: emailHtml,
-    }),
+  };
+
+  console.log("Transporter config:", {
+    host: transporterConfig.host,
+    port: transporterConfig.port,
+    secure: transporterConfig.secure,
+    authUser: transporterConfig.auth.user,
   });
 
-  if (!response.ok) {
-    const error = await response.text();
-    console.error("Resend error:", response.status, error);
-    throw new Error(`Email failed: ${response.status} - ${error}`);
-  }
+  const transporter = nodemailer.createTransport(transporterConfig);
 
-  const result = await response.json();
-  console.log("Email sent successfully!");
-  return result;
+  // Verify connection first
+  console.log("Verifying transporter...");
+  await transporter.verify();
+  console.log("Transporter verified!");
+
+  const info = await transporter.sendMail({
+    from: smtpSettings.user,
+    to,
+    subject,
+    text,
+    html,
+    attachments,
+  });
+
+  console.log("Email sent successfully, messageId:", info.messageId);
+  return info;
 }
