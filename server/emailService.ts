@@ -8,6 +8,13 @@ interface SmtpSettings {
   pass?: string;
 }
 
+interface Attachment {
+  filename: string;
+  path?: string;
+  content?: Buffer | string;
+  contentType?: string;
+}
+
 export async function sendEmail(
   smtpSettings: SmtpSettings | null,
   {
@@ -15,11 +22,13 @@ export async function sendEmail(
     subject,
     html,
     text,
+    attachments = [],
   }: {
     to: string;
     subject: string;
     html?: string;
     text?: string;
+    attachments?: Attachment[];
   }
 ) {
   console.log("sendEmail called with smtpSettings:", {
@@ -28,6 +37,7 @@ export async function sendEmail(
     port: smtpSettings?.port,
     secure: smtpSettings?.secure,
     passLength: smtpSettings?.pass?.length,
+    attachmentsCount: attachments.length,
   });
 
   if (!smtpSettings?.user || !smtpSettings?.pass) {
@@ -65,6 +75,7 @@ export async function sendEmail(
     subject,
     text,
     html,
+    attachments,
   });
 
   console.log("Email sent successfully, messageId:", info.messageId);

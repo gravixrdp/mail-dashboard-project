@@ -116,11 +116,41 @@ export const appRouter = router({
           secure: settings?.smtpSecure,
         };
         
-        // Send the email
+        // Get resume if one is selected
+        const attachments = [];
+        // First check if a specific resume is selected
+        if (input.resumeUsed) {
+          const resumeId = parseInt(input.resumeUsed);
+          if (resumeId) {
+            const resume = await db.getResumeById(ctx.db, resumeId, ctx.user.id);
+            if (resume?.fileUrl) {
+              attachments.push({
+                filename: resume.filename,
+                path: resume.fileUrl,
+                contentType: resume.mimeType || 'application/pdf',
+              });
+            }
+          }
+        } 
+        // If no specific resume, check default resume
+        else if (settings?.defaultResumeId) {
+          const defaultResume = await db.getDefaultResume(ctx.db, ctx.user.id);
+          if (defaultResume?.fileUrl) {
+            attachments.push({
+              filename: defaultResume.filename,
+              path: defaultResume.fileUrl,
+              contentType: defaultResume.mimeType || 'application/pdf',
+            });
+          }
+        }
+        
+        // Send the email with HTML and attachments
         await sendEmail(smtpSettings, {
           to: input.hrEmail,
           subject: input.subject,
           text: input.emailBody,
+          html: input.emailBody, // Pass the email body as HTML so bold etc works!
+          attachments,
         });
         
         sentAt = new Date().toISOString();
