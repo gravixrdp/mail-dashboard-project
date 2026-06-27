@@ -200,32 +200,22 @@ export default function Settings() {
                   placeholder="you@example.com"
                 />
               </FormField>
-              <FormField label="Password / App Password" hint="Use Gmail App Password (not your login password)">
+              <FormField label="Resend API Key" hint="Free - get from resend.com">
                 <Input
                   {...form.register("smtpPass")}
-                  placeholder="Your app password"
+                  placeholder="re_xxxxxxxxxxxxxxxx"
                   type="password"
                 />
               </FormField>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField label="SMTP Host" hint="e.g., smtp.gmail.com">
-                <Input
-                  {...form.register("smtpHost")}
-                  placeholder="smtp.gmail.com"
-                />
-              </FormField>
-              <FormField label="Port" hint="e.g., 587">
-                <Input
-                  type="number"
-                  {...form.register("smtpPort", { valueAsNumber: true })}
-                  placeholder="587"
-                />
-              </FormField>
+            <div className="p-3 rounded-lg bg-muted text-xs space-y-1">
+              <p className="font-medium">How to setup (2 minutes):</p>
+              <p>1. Go to <a href="https://resend.com" target="_blank" className="underline font-medium">resend.com</a> and create free account</p>
+              <p>2. Go to API Keys, create one, copy it</p>
+              <p>3. Go to Domains, verify your email (click link in email)</p>
+              <p>4. Paste API key above, save settings</p>
+              <p className="text-muted-foreground">Free: 100 emails/day. Emails show as "from your@email.com"</p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              For Gmail: Enable 2FA, then create App Password at <a href="https://myaccount.google.com/apppasswords" target="_blank" className="underline">myaccount.google.com/apppasswords</a>
-            </p>
           </div>
         </Section>
 
