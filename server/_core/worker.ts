@@ -3,7 +3,6 @@ import { cors } from "hono/cors";
 import { trpcServer } from "@hono/trpc-server";
 import { appRouter } from "../routers";
 import { drizzle } from "drizzle-orm/d1";
-import { serveStatic } from "hono/cloudflare-workers";
 import * as db from "../db";
 
 type Env = {
@@ -14,8 +13,9 @@ type Env = {
   OWNER_OPEN_ID: string;
   BUILT_IN_FORGE_API_URL?: string;
   BUILT_IN_FORGE_API_KEY?: string;
-  __STATIC_CONTENT: string;
-  __STATIC_CONTENT_MANIFEST: string;
+  ASSETS: {
+    fetch: (request: Request | string, init?: RequestInit) => Promise<Response>;
+  };
 };
 
 const app = new Hono<{ Bindings: Env }>();
@@ -64,20 +64,37 @@ app.use("/api/trpc/*", trpcServer({
   },
 }));
 
-// Serve static files (JS, CSS, images, etc.)
-app.use("/*", serveStatic({ root: "./dist/public", manifest: false }));
-
-// Fallback to index.html for SPA routing
-app.get("*", async (c, next) => {
+// For all other routes, try to serve static assets first
+app.get("*", async (c) => {
   const path = c.req.path;
-  
-  // Skip tRPC and static files with extensions
-  if (path.startsWith("/api/trpc") || path.includes(".")) {
-    return next();
+  console.log("Handling request for path:", path);
+
+  // If it's an API request, let it 404
+  if (path.startsWith("/api/")) {
+    return c.json({ error: "Not Found" }, 404);
   }
-  
-  // Serve index.html for all SPA routes
-  return serveStatic({ path: "index.html", root: "./dist/public", manifest: false })(c);
+
+  try {
+    // Try to fetch the static asset
+    const assetRes = await c.env.ASSETS.fetch(c.req.raw);
+    console.log("Asset response status:", assetRes.status);
+    if (assetRes.ok && assetRes.status !== 404) {
+      return assetRes;
+    }
+
+    // Fallback to index.html for SPA
+    console.log("Falling back to index.html");
+    const indexUrl = new URL(c.req.url);
+    indexUrl.pathname = "/index.html";
+    const indexRes = await c.env.ASSETS.fetch(indexUrl.toString());
+    return new Response(indexRes.body, {
+      status: 200,
+      headers: indexRes.headers,
+    });
+  } catch (err) {
+    console.error("Error serving static assets:", err);
+    return c.text("Internal Server Error: " + (err as Error).message, 500);
+  }
 });
 
 export default app;

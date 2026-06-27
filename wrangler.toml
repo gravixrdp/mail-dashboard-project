@@ -3,6 +3,8 @@ main = "server/_core/worker.ts"
 compatibility_date = "2026-06-27"
 compatibility_flags = ["nodejs_compat"]
 
+assets = { directory = "./dist/public" }
+
 [[d1_databases]]
 binding = "DB"
 database_name = "mail-dashboard-db"
