@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -18,8 +17,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
 import {
-  Send, Save, Eye, AlertTriangle, X, Plus, FileText, Building2, ChevronDown, Bold, Italic, Underline,
+  Send, Save, Eye, AlertTriangle, FileText, Building2,
+  Bold, Italic, Underline as UnderlineIcon, List, ListOrdered,
+  Heading1, Heading2, Code, Quote, Undo2, Redo2, Minus,
 } from "lucide-react";
 
 const VARIABLES = ["{{company}}", "{{today}}", "{{position}}", "{{portfolio}}", "{{github}}", "{{linkedin}}", "{{phone}}", "{{email}}", "{{resume}}"];
@@ -59,12 +63,37 @@ function renderVariables(text: string, settings: any, companyName: string): stri
     .replace(/\{\{position\}\}/g, "{{position}}");
 }
 
+function ToolbarButton({ onClick, isActive, disabled, title, children }: {
+  onClick: () => void;
+  isActive?: boolean;
+  disabled?: boolean;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Button
+      type="button"
+      variant={isActive ? "secondary" : "ghost"}
+      size="icon"
+      className="h-8 w-8"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+    >
+      {children}
+    </Button>
+  );
+}
+
+function ToolbarSeparator() {
+  return <div className="w-px h-5 bg-border mx-0.5" />;
+}
+
 export default function ComposeMail() {
   const [showPreview, setShowPreview] = useState(false);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [duplicateInfo, setDuplicateInfo] = useState<any>(null);
   const [isSending, setIsSending] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: templates } = trpc.templates.list.useQuery();
   const { data: resumes } = trpc.resumes.list.useQuery();
@@ -75,6 +104,7 @@ export default function ComposeMail() {
     onSuccess: () => {
       toast.success("Application saved and email queued!");
       form.reset();
+      editor?.commands.setContent("");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -84,69 +114,25 @@ export default function ComposeMail() {
     defaultValues: { to: "", subject: settings?.defaultSubject ?? "", body: "" },
   });
 
-  // Function to wrap selected text with tags
-  const wrapTextWithTags = (startTag: string, endTag: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const { selectionStart, selectionEnd, value } = textarea;
-    const selectedText = value.substring(selectionStart, selectionEnd);
-    const newText = value.substring(0, selectionStart) +
-                   startTag + selectedText + endTag +
-                   value.substring(selectionEnd);
-
-    form.setValue("body", newText);
-
-    // Force the textarea DOM to update by using the native setter
-    const nativeSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLTextAreaElement.prototype, "value"
-    )?.set;
-    if (nativeSetter) {
-      nativeSetter.call(textarea, newText);
-      textarea.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-
-    // Set cursor position after the end tag
-    setTimeout(() => {
-      textarea.focus();
-      if (selectedText.length === 0) {
-        textarea.setSelectionRange(selectionStart + startTag.length, selectionStart + startTag.length);
-      } else {
-        textarea.setSelectionRange(selectionEnd + startTag.length + endTag.length, selectionEnd + startTag.length + endTag.length);
-      }
-    }, 0);
-  };
-
-  // Formatting functions
-  const handleBold = () => wrapTextWithTags("<b>", "</b>");
-  const handleItalic = () => wrapTextWithTags("<i>", "</i>");
-  const handleUnderline = () => wrapTextWithTags("<u>", "</u>");
-
-  // Keyboard shortcut handler
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-        e.preventDefault();
-        handleBold();
-      } else if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
-        e.preventDefault();
-        handleItalic();
-      } else if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
-        e.preventDefault();
-        handleUnderline();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  const editor = useEditor({
+    extensions: [StarterKit, Underline],
+    content: "",
+    editorProps: {
+      attributes: {
+        class: "prose prose-sm sm:prose max-w-none font-mono text-sm min-h-[320px] px-3 py-2 focus:outline-none",
+        placeholder: "Dear Hiring Manager,\n\nI am writing to express my interest in...",
+      },
+    },
+    onUpdate: ({ editor }) => {
+      form.setValue("body", editor.getHTML());
+    },
+  });
 
   const toValue = form.watch("to");
   const bodyValue = form.watch("body");
   const subjectValue = form.watch("subject");
   const companyNameValue = form.watch("companyName") ?? "";
 
-  // Auto-detect company from email
   useEffect(() => {
     if (toValue && toValue.includes("@")) {
       const detected = extractCompanyFromEmail(toValue);
@@ -156,12 +142,18 @@ export default function ComposeMail() {
     }
   }, [toValue]);
 
-  // Load template
   const loadTemplate = (templateId: string) => {
     const template = (templates ?? []).find((t: any) => t.id.toString() === templateId);
     if (template) {
       form.setValue("subject", template.subject);
       form.setValue("body", template.body);
+      editor?.commands.setContent(template.body);
+    }
+  };
+
+  const insertVariable = (variable: string) => {
+    if (editor) {
+      editor.chain().focus().insertContent(variable).run();
     }
   };
 
@@ -219,11 +211,6 @@ export default function ComposeMail() {
     toast.success("Draft saved");
   };
 
-  const insertVariable = (variable: string) => {
-    const current = form.getValues("body");
-    form.setValue("body", current + variable);
-  };
-
   const renderedBody = renderVariables(bodyValue, settings, companyNameValue);
   const renderedSubject = renderVariables(subjectValue, settings, companyNameValue);
 
@@ -236,7 +223,6 @@ export default function ComposeMail() {
 
       <form onSubmit={form.handleSubmit(handleSend)}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          {/* Main compose area */}
           <div className="lg:col-span-2 space-y-4">
             <Card>
               <CardContent className="p-5 space-y-4">
@@ -274,41 +260,119 @@ export default function ComposeMail() {
 
                 <Separator />
 
-                {/* Formatting Toolbar */}
+                {/* Rich Text Editor */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Format</Label>
-                  <div className="flex items-center gap-1.5">
-                    <Button 
-                      type="button" 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8" 
-                      onClick={handleBold}
-                      title="Bold (Ctrl+B)"
-                    >
-                      <Bold className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8" 
-                      onClick={handleItalic}
-                      title="Italic (Ctrl+I)"
-                    >
-                      <Italic className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8" 
-                      onClick={handleUnderline}
-                      title="Underline (Ctrl+U)"
-                    >
-                      <Underline className="h-4 w-4" />
-                    </Button>
+                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Body</Label>
+
+                  {/* Toolbar */}
+                  {editor && (
+                    <div className="flex flex-wrap items-center gap-0.5 p-1.5 border rounded-t-md bg-muted/30">
+                      <ToolbarButton
+                        onClick={() => editor.chain().focus().toggleBold().run()}
+                        isActive={editor.isActive("bold")}
+                        title="Bold (Ctrl+B)"
+                      >
+                        <Bold className="h-4 w-4" />
+                      </ToolbarButton>
+                      <ToolbarButton
+                        onClick={() => editor.chain().focus().toggleItalic().run()}
+                        isActive={editor.isActive("italic")}
+                        title="Italic (Ctrl+I)"
+                      >
+                        <Italic className="h-4 w-4" />
+                      </ToolbarButton>
+                      <ToolbarButton
+                        onClick={() => editor.chain().focus().toggleUnderline().run()}
+                        isActive={editor.isActive("underline")}
+                        title="Underline (Ctrl+U)"
+                      >
+                        <UnderlineIcon className="h-4 w-4" />
+                      </ToolbarButton>
+
+                      <ToolbarSeparator />
+
+                      <ToolbarButton
+                        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                        isActive={editor.isActive("heading", { level: 1 })}
+                        title="Heading 1"
+                      >
+                        <Heading1 className="h-4 w-4" />
+                      </ToolbarButton>
+                      <ToolbarButton
+                        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                        isActive={editor.isActive("heading", { level: 2 })}
+                        title="Heading 2"
+                      >
+                        <Heading2 className="h-4 w-4" />
+                      </ToolbarButton>
+
+                      <ToolbarSeparator />
+
+                      <ToolbarButton
+                        onClick={() => editor.chain().focus().toggleBulletList().run()}
+                        isActive={editor.isActive("bulletList")}
+                        title="Bullet List"
+                      >
+                        <List className="h-4 w-4" />
+                      </ToolbarButton>
+                      <ToolbarButton
+                        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                        isActive={editor.isActive("orderedList")}
+                        title="Numbered List"
+                      >
+                        <ListOrdered className="h-4 w-4" />
+                      </ToolbarButton>
+
+                      <ToolbarSeparator />
+
+                      <ToolbarButton
+                        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                        isActive={editor.isActive("codeBlock")}
+                        title="Code Block"
+                      >
+                        <Code className="h-4 w-4" />
+                      </ToolbarButton>
+                      <ToolbarButton
+                        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                        isActive={editor.isActive("blockquote")}
+                        title="Quote"
+                      >
+                        <Quote className="h-4 w-4" />
+                      </ToolbarButton>
+                      <ToolbarButton
+                        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                        title="Divider"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </ToolbarButton>
+
+                      <ToolbarSeparator />
+
+                      <ToolbarButton
+                        onClick={() => editor.chain().focus().undo().run()}
+                        disabled={!editor.can().undo()}
+                        title="Undo (Ctrl+Z)"
+                      >
+                        <Undo2 className="h-4 w-4" />
+                      </ToolbarButton>
+                      <ToolbarButton
+                        onClick={() => editor.chain().focus().redo().run()}
+                        disabled={!editor.can().redo()}
+                        title="Redo (Ctrl+Shift+Z)"
+                      >
+                        <Redo2 className="h-4 w-4" />
+                      </ToolbarButton>
+                    </div>
+                  )}
+
+                  {/* Editor */}
+                  <div className="border rounded-b-md min-h-[320px] bg-background">
+                    <EditorContent editor={editor} />
                   </div>
+
+                  {form.formState.errors.body && (
+                    <p className="text-xs text-destructive">{form.formState.errors.body.message}</p>
+                  )}
                 </div>
 
                 {/* Variables */}
@@ -326,21 +390,6 @@ export default function ComposeMail() {
                       </button>
                     ))}
                   </div>
-                </div>
-
-                {/* Body */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Body</Label>
-                  <Textarea
-                    ref={textareaRef}
-                    {...form.register("body")}
-                    placeholder="Dear Hiring Manager,&#10;&#10;I am writing to express my interest in..."
-                    rows={16}
-                    className="font-mono text-sm resize-none"
-                  />
-                  {form.formState.errors.body && (
-                    <p className="text-xs text-destructive">{form.formState.errors.body.message}</p>
-                  )}
                 </div>
               </CardContent>
             </Card>
@@ -360,7 +409,7 @@ export default function ComposeMail() {
             </div>
           </div>
 
-          {/* Sidebar options */}
+          {/* Sidebar */}
           <div className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
@@ -427,7 +476,6 @@ export default function ComposeMail() {
               </CardContent>
             </Card>
 
-            {/* Variable values */}
             {settings && (
               <Card>
                 <CardHeader className="pb-3">
@@ -471,8 +519,8 @@ export default function ComposeMail() {
               </div>
             </div>
             <div className="p-4 rounded-lg bg-muted/50">
-              <div 
-                className="text-sm whitespace-pre-wrap font-sans leading-relaxed"
+              <div
+                className="text-sm font-sans leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: renderedBody }}
               />
             </div>
