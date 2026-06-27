@@ -3,7 +3,7 @@ main = "server/_core/worker.ts"
 compatibility_date = "2026-06-27"
 compatibility_flags = ["nodejs_compat"]
 
-assets = { directory = "./dist/public" }
+assets = { directory = "./dist/public", binding = "ASSETS" }
 
 [[d1_databases]]
 binding = "DB"

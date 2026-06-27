@@ -67,34 +67,50 @@ app.use("/api/trpc/*", trpcServer({
 // For all other routes, try to serve static assets first
 app.get("*", async (c) => {
   const path = c.req.path;
-  console.log("Handling request for path:", path);
 
   // If it's an API request, let it 404
   if (path.startsWith("/api/")) {
     return c.json({ error: "Not Found" }, 404);
   }
 
-  try {
-    // Try to fetch the static asset
-    const assetRes = await c.env.ASSETS.fetch(c.req.raw);
-    console.log("Asset response status:", assetRes.status);
-    if (assetRes.ok && assetRes.status !== 404) {
-      return assetRes;
+  // Try ASSETS binding if available
+  if (c.env.ASSETS && typeof c.env.ASSETS.fetch === "function") {
+    try {
+      const assetRes = await c.env.ASSETS.fetch(c.req.raw);
+      if (assetRes.ok && assetRes.status !== 404) {
+        return assetRes;
+      }
+    } catch (err) {
+      console.error("Error serving static assets:", err);
     }
 
-    // Fallback to index.html for SPA
-    console.log("Falling back to index.html");
-    const indexUrl = new URL(c.req.url);
-    indexUrl.pathname = "/index.html";
-    const indexRes = await c.env.ASSETS.fetch(indexUrl.toString());
-    return new Response(indexRes.body, {
-      status: 200,
-      headers: indexRes.headers,
-    });
-  } catch (err) {
-    console.error("Error serving static assets:", err);
-    return c.text("Internal Server Error: " + (err as Error).message, 500);
+    // SPA fallback via ASSETS: serve index.html for client-side routing
+    try {
+      const indexReq = new Request(new URL("/index.html", c.req.url).toString(), c.req.raw);
+      const indexRes = await c.env.ASSETS.fetch(indexReq);
+      return new Response(indexRes.body, {
+        status: 200,
+        headers: { "Content-Type": "text/html;charset=UTF-8" },
+      });
+    } catch (err) {
+      console.error("Error serving index.html fallback:", err);
+    }
   }
+
+  // Last resort: minimal SPA shell
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mail Dashboard</title>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/assets/index-B0ZNy_X_.js"></script>
+  <link rel="stylesheet" href="/assets/index-DuDygwF2.css" />
+</body>
+</html>`);
 });
 
 export default app;
