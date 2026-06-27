@@ -3,22 +3,9 @@ main = "server/_core/worker.ts"
 compatibility_date = "2026-06-27"
 compatibility_flags = ["nodejs_compat"]
 
-[vars]
-DATABASE_URL = "DB"
+assets = { directory = "./dist/public" }
 
 [[d1_databases]]
 binding = "DB"
 database_name = "mail-dashboard-db"
 database_id = "2b12481c-8bf8-4eaf-882a-bf204d5fdcc6"
-
-[site]
-bucket = "./dist/public"
-
-# [build]
-# command = "pnpm build"
-
-[env.production]
-name = "mail-dashboard-production"
-
-[env.development]
-name = "mail-dashboard-development"
