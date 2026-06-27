@@ -1,5 +1,3 @@
-import nodemailer from "nodemailer";
-
 interface SmtpSettings {
   host?: string;
   port?: number;
@@ -13,6 +11,68 @@ interface Attachment {
   path?: string;
   content?: Buffer | string;
   contentType?: string;
+}
+
+// MailChannels API for Cloudflare Workers (free)
+// https://api.mailchannels.net/tx/v1/documentation
+async function sendViaMailChannels(
+  fromEmail: string,
+  toEmail: string,
+  subject: string,
+  html: string,
+  text?: string
+) {
+  const response = await fetch("https://api.mailchannels.net/tx/v1/email", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      personalizations: [
+        {
+          to: [{ email: toEmail }],
+        },
+      ],
+      from: {
+        email: fromEmail,
+        name: "JobTracker Dashboard",
+      },
+      subject: subject,
+      content: [
+        {
+          type: "text/plain",
+          value: text || html.replace(/<[^>]*>/g, ""),
+        },
+        {
+          type: "text/html",
+          value: html,
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`MailChannels API error: ${response.status} - ${error}`);
+  }
+
+  return await response.json();
+}
+
+// SMTP fallback using fetch-based approach (no DNS lookup needed)
+async function sendViaSmtpFetch(
+  smtpSettings: SmtpSettings,
+  fromEmail: string,
+  toEmail: string,
+  subject: string,
+  html: string,
+  text?: string
+) {
+  // For Gmail SMTP via fetch, we use a simple approach
+  // In production, you'd use a service like Resend, SendGrid, or Postmark
+  throw new Error(
+    "SMTP not supported on Cloudflare Workers. Please use MailChannels (free) by setting your email in Settings."
+  );
 }
 
 export async function sendEmail(
@@ -40,44 +100,22 @@ export async function sendEmail(
     attachmentsCount: attachments.length,
   });
 
-  if (!smtpSettings?.user || !smtpSettings?.pass) {
-    throw new Error("SMTP settings not configured. Please set your email and password in Settings.");
+  if (!smtpSettings?.user) {
+    throw new Error("Email not configured. Please set your email in Settings.");
   }
 
-  // Default to Gmail settings if host not provided
-  const transporterConfig = {
-    host: smtpSettings.host || "smtp.gmail.com",
-    port: smtpSettings.port || 587,
-    secure: smtpSettings.secure ?? false,
-    auth: {
-      user: smtpSettings.user,
-      pass: smtpSettings.pass,
-    },
-  };
+  const fromEmail = smtpSettings.user;
+  const emailHtml = html || text || "";
+  const emailText = text || html?.replace(/<[^>]*>/g, "") || "";
 
-  console.log("Transporter config:", {
-    host: transporterConfig.host,
-    port: transporterConfig.port,
-    secure: transporterConfig.secure,
-    authUser: transporterConfig.auth.user,
-  });
+  console.log("Sending email via MailChannels...");
 
-  const transporter = nodemailer.createTransport(transporterConfig);
-
-  // Verify connection first
-  console.log("Verifying transporter...");
-  await transporter.verify();
-  console.log("Transporter verified!");
-
-  const info = await transporter.sendMail({
-    from: smtpSettings.user,
-    to,
-    subject,
-    text,
-    html,
-    attachments,
-  });
-
-  console.log("Email sent successfully, messageId:", info.messageId);
-  return info;
+  try {
+    const result = await sendViaMailChannels(fromEmail, to, subject, emailHtml, emailText);
+    console.log("Email sent successfully via MailChannels");
+    return result;
+  } catch (error: any) {
+    console.error("MailChannels failed:", error.message);
+    throw error;
+  }
 }
